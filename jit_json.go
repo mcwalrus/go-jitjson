@@ -13,7 +13,7 @@ type JSON interface {
 }
 
 // JitJSON provides 'just-in-time' compilation for json marshal and unmarshal methods
-// for some JSON value with type T.
+// for some type T which implements JSON.
 type JitJSON[T JSON] struct {
 	data []byte
 	val  *T
@@ -42,19 +42,14 @@ func NewJitJSON[T JSON](data []byte) (*JitJSON[T], error) {
 	return &jit, nil
 }
 
-// Set new value to jitJSON.
-// JitJSON byte representation is wiped to avoid data mismatch.
-// Set stores a new value within JitJSON. The byte representation is cleared to avoid
-// data mismatch.
+// Set a new value to JitJSON.
 func (jit *JitJSON[JSON]) Set(val JSON) {
 	jit.data = nil
 	jit.val = &val
 }
 
-// Marshal provides the byte representation with 'just-in-time' compilation.
-// If the value is never marshalled, the initial representation will be returned.
-// Since the underlying JSON type could be a pointer to some type, the representation
-// is ignored when the value is set as it could become out of sync with the value.
+// Marshal provides the byte representation with 'just-in-time' compilation. If the
+// value has not yet been marshalled, the initial byte representation will be returned.
 func (jit *JitJSON[JSON]) Marshal() ([]byte, error) {
 	if jit.val == nil {
 		return jit.data, nil
