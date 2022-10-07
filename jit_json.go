@@ -5,20 +5,20 @@ import (
 	"fmt"
 )
 
-// JSON struct requires marshal and unmarshal json methods or json tags.
+// JSON value requires json marshal and unmarshal methods or json tags.
 type JSON interface {
 	json.Marshaler
 	json.Unmarshaler
 }
 
-// JitJSON provides 'just-in-time' complication for both marshalling and
-// unmarshalling some JSON struct.
+// JitJSON provides 'just-in-time' compilation for json marshal and unmarshal methods
+// for some JSON value with type T.
 type JitJSON[T JSON] struct {
 	data []byte
 	val  *T
 }
 
-// NewJitJSON creates new JitJSON from data.
+// NewJitJSON creates new JitJSON from json byte representation.
 func NewJitJSON[T JSON](data []byte) (*JitJSON[T], error) {
 	if !json.Valid(data) {
 		return nil, fmt.Errorf("invalid json")
@@ -33,15 +33,19 @@ func NewJitJSON[T JSON](data []byte) (*JitJSON[T], error) {
 
 // Set new value to jitJSON.
 // JitJSON byte representation is wiped to avoid data mismatch.
+// Set stores a new value within JitJSON. The byte representation is cleared to avoid
+// data mismatch.
 func (jit *JitJSON[JSON]) Set(val JSON) {
 	jit.data = nil
 	jit.val = &val
 }
 
-// Marshal provides the wrapper function to json.Marshal.
-// JitJSON caches the byte representation once marshal has occurred.
+// Marshal provides the byte representation with 'just-in-time' compilation.
+// If the value is never marshalled, the initial representation will be returned.
+// Since the underlying JSON type could be a pointer to some type, the representation
+// is ignored when the value is set as it could become out of sync with the value.
 func (jit *JitJSON[JSON]) Marshal() ([]byte, error) {
-	if jit.data != nil {
+	if jit.val == nil {
 		return jit.data, nil
 	}
 
@@ -54,8 +58,8 @@ func (jit *JitJSON[JSON]) Marshal() ([]byte, error) {
 	return jit.data, nil
 }
 
-// Unmarshal provides the wrapper function to json.Unmarshal.
-// JitJSON caches the returned value once unmarshal has occurred.
+// Unmarshal provides the value with 'just-in-time' compilation. After the first
+// unmarshal, the value can be returned without further repeated unmarshalling.
 func (jit *JitJSON[JSON]) Unmarshal() (JSON, error) {
 	if jit.val != nil {
 		return *jit.val, nil
