@@ -1,8 +1,9 @@
-package main
+package jitjson
 
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 // JSON value requires json marshal and unmarshal methods or json tags.
@@ -22,6 +23,16 @@ type JitJSON[T JSON] struct {
 func NewJitJSON[T JSON](data []byte) (*JitJSON[T], error) {
 	if !json.Valid(data) {
 		return nil, fmt.Errorf("invalid json")
+	}
+
+	// TODO: check if cases need to be considered.
+	var val T
+	kind := reflect.ValueOf(val).Kind()
+	switch kind {
+	case reflect.Ptr:
+		return nil, fmt.Errorf("cannot parse json to pointer")
+	case reflect.Interface:
+		return nil, fmt.Errorf("cannot parse json to interface")
 	}
 
 	jit := JitJSON[T]{
