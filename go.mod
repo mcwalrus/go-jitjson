@@ -1,4 +1,4 @@
-module github.com/MaxCollier/go-jitjson
+module github.com/mcwalrus/go-jitjson
 
 go 1.19
 

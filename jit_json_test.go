@@ -3,7 +3,7 @@ package jitjson_test
 import (
 	"testing"
 
-	"github.com/MaxCollier/go-jitjson"
+	"github.com/mcwalrus/go-jitjson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

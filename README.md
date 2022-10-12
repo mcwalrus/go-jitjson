@@ -14,7 +14,7 @@ JitJSON cannot be applied to pointer types and interfaces as:
 
 Just-in-time unmarshalling:
 ```
-import 	"github.com/MaxCollier/go-jitjson"
+import 	"github.com/mcwalrus/go-jitjson"
 
 type Person struct {
 	Name string `json:"name"`
@@ -47,7 +47,7 @@ func main() {
 
 Just-in-time marshalling:
 ```
-import 	"github.com/MaxCollier/go-jitjson"
+import 	"github.com/mcwalrus/go-jitjson"
 
 type Person struct {
 	Name string `json:"name"`
