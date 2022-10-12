@@ -1,72 +1,102 @@
 package jitjson_test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/mcwalrus/go-jitjson"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// TODO: remove the assert / require framework to make bundle smaller.
 func TestNilJitJSON(t *testing.T) {
 	data := []byte(`null`)
 
 	jit, err := jitjson.NewJitJSON[struct{}](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create struct{} JitJSON")
+		t.FailNow()
+	}
 
 	value, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, struct{}{}, value)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != struct{}{} {
+		t.Error("unexpected value from Unmarshal")
+	}
 }
 
 func TestIntJitJSON(t *testing.T) {
 	data := []byte(`1`)
 
 	jit, err := jitjson.NewJitJSON[int](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create int JitJSON")
+		t.FailNow()
+	}
 
 	value, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, value)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != 1 {
+		t.Error("unexpected value from Unmarshal")
+	}
 }
 
 func TestFloatJitJSON(t *testing.T) {
 	data := []byte(`1.00000001`)
 
 	jit, err := jitjson.NewJitJSON[float64](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create float64 JitJSON")
+		t.FailNow()
+	}
 
 	value, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, 1.00000001, value)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != 1.00000001 {
+		t.Error("unexpected value from Unmarshal")
+	}
 }
 
 func TestStringJitJSON(t *testing.T) {
-	data := []byte(`"some text"`)
+	data := []byte(`"json encoded"`)
 
 	jit, err := jitjson.NewJitJSON[string](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create string JitJSON")
+		t.FailNow()
+	}
 
 	value, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, "some text", value)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+		t.FailNow()
+	}
+	if value != "json encoded" {
+		t.Error("unexpected value from Unmarshal")
+		t.FailNow()
+	}
 }
 
 func TestArrayJitJSON(t *testing.T) {
 	data := []byte(`[1, 2, 3, 4, 5]`)
 
 	jit, err := jitjson.NewJitJSON[[]int](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create []int JitJSON")
+		t.FailNow()
+	}
 
-	value, err := jit.Unmarshal()
-	require.NoError(t, err)
+	values, err := jit.Unmarshal()
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+		t.FailNow()
+	}
 
-	assert.Equal(t, []int{1, 2, 3, 4, 5}, value)
+	expected := []int{1, 2, 3, 4, 5}
+	if !compareValues(t, expected, values) {
+		t.Error("unexpected values")
+	}
 }
 
 func TestMapJitJSON(t *testing.T) {
@@ -77,23 +107,50 @@ func TestMapJitJSON(t *testing.T) {
 	}`)
 
 	jit, err := jitjson.NewJitJSON[map[string]interface{}](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create map JitJSON")
+		t.FailNow()
+	}
 
 	m, err := jit.Unmarshal()
-	require.NoError(t, err)
-	require.NotNil(t, m)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+		t.FailNow()
+	} else if m == nil {
+		t.Error("expected map to be filled")
+		t.FailNow()
+	}
 
 	value, ok := m["1"]
-	assert.True(t, ok)
-	assert.Equal(t, "two", value)
+	if !ok {
+		t.Error("expected map to contain key \"1\"")
+	} else if value != "two" {
+		t.Error("expected value to equal \"two\"")
+	}
 
 	value, ok = m["three"]
-	assert.True(t, ok)
-	assert.Equal(t, 4.0, value)
+	if !ok {
+		t.Error("expected map to contain key \"three\"")
+	} else if value != 4.0 {
+		t.Error("expected value to equal 4.0")
+	}
 
 	value, ok = m["5"]
-	assert.True(t, ok)
-	assert.Equal(t, []interface{}{6.0, 7.0, "eight", 9.0, "ten"}, value)
+	if !ok {
+		t.Error("expected map to contain key \"5\"")
+		t.FailNow()
+	}
+
+	v, ok := (value).([]interface{})
+	if !ok {
+		t.Error("expected value to have type []interface{}")
+		t.FailNow()
+	}
+
+	expected := []interface{}{6.0, 7.0, "eight", 9.0, "ten"}
+	if !compareInterfaceValues(t, expected, v) {
+		t.Error("unexpected values")
+	}
 }
 
 type Person struct {
@@ -115,12 +172,17 @@ func TestExample1(t *testing.T) {
 	}
 
 	jit, err := jitjson.NewJitJSON[Person](data)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create Person JitJSON")
+		t.FailNow()
+	}
 
 	person, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, person)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if person != expected {
+		t.Error("unexpected person struct")
+	}
 }
 
 func TestExample2(t *testing.T) {
@@ -132,88 +194,74 @@ func TestExample2(t *testing.T) {
 	expected := []byte(`{"name":"Charlie Bucket","age":12}`)
 
 	jit, err := jitjson.NewJitJSON[Person](nil)
-	require.NoError(t, err)
+	if err != nil {
+		t.Error("failed to create nil Person JitJSON")
+		t.FailNow()
+	}
 
 	jit.Set(person)
 	data, err := jit.Marshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, data)
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if bytes.Compare(expected, data) != 0 {
+		t.Error("unexpected json encoding")
+	}
 }
 
-func TestJitJSON1(t *testing.T) {
+type TestType struct {
+	Field *string `json:"field"`
+}
+
+func TestNilFieldJitJSON(t *testing.T) {
 	data := []byte(`{
-		"name": "Chris",
-		"age": 42
+		"field": null
 	}`)
 
-	jit, err := jitjson.NewJitJSON[Person](data)
-	require.NoError(t, err)
-
-	person, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, "Chris", person.Name)
-	assert.Equal(t, 42, person.Age)
-}
-
-type Boater struct {
-	Person Person  `json:"person"`
-	Boat   *string `json:"boat"`
-}
-
-func TestJitJSON2(t *testing.T) {
-	data := []byte(`{
-		"person": {
-			"name": "Chris",
-			"age": 42
-		},
-		"boat": "Stout"
-	}`)
-
-	jit, err := jitjson.NewJitJSON[Boater](data)
-	require.NoError(t, err)
-
-	boater, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	assert.Equal(t, "Chris", boater.Person.Name)
-	assert.Equal(t, 42, boater.Person.Age)
-	assert.Nil(t, boater.Boat)
-}
-
-func TestJitJSON3(t *testing.T) {
-	data := []byte(`{
-		"person": {
-			"name": "Chris",
-			"age": 42
-		},
-		"boat": "Stout"
-	}`)
-
-	jit, err := jitjson.NewJitJSON[Boater](data)
-	require.NoError(t, err)
-
-	boater, err := jit.Unmarshal()
-	require.NoError(t, err)
-
-	if assert.NotNil(t, boater.Boat) {
-		assert.Equal(t, "Stout", *boater.Boat)
+	jit, err := jitjson.NewJitJSON[TestType](data)
+	if err != nil {
+		t.Error("failed to create TestType JitJSON")
+		t.FailNow()
 	}
 
-	if t.Failed() {
-		return
+	var expected TestType
+	value, err := jit.Unmarshal()
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != expected {
+		t.Error("unexpected TestType")
+	}
+}
+
+func TestUpdateNilFieldJitJSON(t *testing.T) {
+	data := []byte(`{
+		"field": null
+	}`)
+
+	jit, err := jitjson.NewJitJSON[TestType](data)
+	if err != nil {
+		t.Error("failed to create TestType JitJSON")
+		t.FailNow()
 	}
 
-	newBoat := "Steeze"
-	boater.Boat = &newBoat
-	jit.Set(boater)
+	var expected TestType
+	value, err := jit.Unmarshal()
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != expected {
+		t.Error("unexpected TestType")
+	}
 
-	boater, err = jit.Unmarshal()
-	require.NoError(t, err)
+	field := "some value"
+	expected = TestType{
+		Field: &field,
+	}
 
-	if assert.NotNil(t, boater.Boat) {
-		assert.Equal(t, "Steeze", *boater.Boat)
+	jit.Set(expected)
+	value, err = jit.Unmarshal()
+	if err != nil {
+		t.Error("failed Unmarshal JitJSON")
+	} else if value != expected {
+		t.Error("unexpected TestType after Set")
 	}
 }
 
@@ -225,19 +273,78 @@ func TestErrorsJitJSON(t *testing.T) {
 
 	// triggers pointer type error.
 	t.Run("pointer", func(t *testing.T) {
-		_, err := jitjson.NewJitJSON[*int]([]byte("null"))
-		require.Error(t, err)
+		_, err := jitjson.NewJitJSON[*int](nil)
+		if err == nil {
+			t.Error("expected error")
+		}
 	})
 
 	// triggers invalid type error.
 	t.Run("interface", func(t *testing.T) {
-		_, err := jitjson.NewJitJSON[interface{}]([]byte("null"))
-		assert.Error(t, err)
+		_, err := jitjson.NewJitJSON[interface{}](nil)
+		if err == nil {
+			t.Error("expected error")
+		}
 	})
 
 	// triggers invalid type error.
 	t.Run("invalid type", func(t *testing.T) {
-		_, err := jitjson.NewJitJSON[testInterface]([]byte("null"))
-		assert.Error(t, err)
+		_, err := jitjson.NewJitJSON[testInterface](nil)
+		if err == nil {
+			t.Error("expected error")
+		}
 	})
+}
+
+func compareValues[T comparable](t *testing.T, expected, values []T) bool {
+	if len(expected) != len(values) {
+		return false
+	}
+
+	for i, expect := range expected {
+		if expect != values[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareInterfaceValues(t *testing.T, expected, values []interface{}) bool {
+	if len(expected) != len(values) {
+		return false
+	}
+
+	for i, expect := range expected {
+		switch e := expect.(type) {
+		case int:
+			v, ok := (values[i]).(int)
+			if !ok {
+				return false
+			}
+			if e != v {
+				return false
+			}
+		case float64:
+			v, ok := (values[i]).(float64)
+			if !ok {
+				return false
+			}
+			if e != v {
+				return false
+			}
+		case string:
+			v, ok := (values[i]).(string)
+			if !ok {
+				return false
+			}
+			if e != v {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+
+	return true
 }
