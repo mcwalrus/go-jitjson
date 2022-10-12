@@ -4,7 +4,7 @@ Go JitJSON provides 'just-in-time' compilation to encode / decode json.
 
 ## Usage
 
-JitJSON can be applied for any generic types excluding pointers of types and interfaces. JitJSON uses `encoding/json` to perform json parsing, which allows for easy integration with existing types which already implement json tags or [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) or [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) methods.
+JitJSON can be applied for any generic types excluding pointers of types and interfaces. JitJSON uses `encoding/json` to perform json parsing, which allows for easy integration with existing types which already implement json struct tags or [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) or [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) methods, or handle json parsing by default.
 
 ### Tradeoffs
 
