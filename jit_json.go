@@ -22,14 +22,6 @@ type JitJSON[T any] struct {
 // Keep in mind, json validation only checks that the encoding is valid and not whether the encoding
 // will unmarshal with the generic type since this would require parsing the json.
 func NewJitJSON[T any](data []byte) (*JitJSON[T], error) {
-	if data == nil {
-		return &JitJSON[T]{}, nil
-	}
-
-	if !json.Valid(data) {
-		return nil, fmt.Errorf("invalid json")
-	}
-
 	var val T
 	kind := reflect.ValueOf(val).Kind()
 	switch kind {
@@ -39,6 +31,14 @@ func NewJitJSON[T any](data []byte) (*JitJSON[T], error) {
 		return nil, fmt.Errorf("cannot parse json to interface")
 	case reflect.Invalid:
 		return nil, fmt.Errorf("cannot parse json to invalid type")
+	}
+
+	if data == nil {
+		return &JitJSON[T]{}, nil
+	}
+
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("invalid json")
 	}
 
 	jit := JitJSON[T]{
