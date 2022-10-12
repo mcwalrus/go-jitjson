@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: remove the assert / require framework to make bundle smaller.
 func TestNilJitJSON(t *testing.T) {
 	data := []byte(`null`)
 
@@ -98,6 +99,46 @@ func TestMapJitJSON(t *testing.T) {
 type Person struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
+}
+
+func TestExample1(t *testing.T) {
+	data := []byte(`
+        {
+            "name": "Willy Wonka",
+            "age":  42
+        }
+    `)
+
+	expected := Person{
+		Name: "Willy Wonka",
+		Age:  42,
+	}
+
+	jit, err := jitjson.NewJitJSON[Person](data)
+	require.NoError(t, err)
+
+	person, err := jit.Unmarshal()
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, person)
+}
+
+func TestExample2(t *testing.T) {
+	person := Person{
+		Name: "Charlie Bucket",
+		Age:  12,
+	}
+
+	expected := []byte(`{"name":"Charlie Bucket","age":12}`)
+
+	jit, err := jitjson.NewJitJSON[Person](nil)
+	require.NoError(t, err)
+
+	jit.Set(person)
+	data, err := jit.Marshal()
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, data)
 }
 
 func TestJitJSON1(t *testing.T) {

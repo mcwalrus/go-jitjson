@@ -1,12 +1,16 @@
 # Go JIT-JSON
 
-Go JitJSON provides 'just-in-time' compilation for encoding / decoding json to types for any generic type excluding pointer types and interfaces. JitJSON uses `encoding/json` directly to perform json marshalling and unmarshalling, which allows for easy integration with existing types which provide json tags or implement (json.Marshaler)[https://pkg.go.dev/encoding/json#Marshaler] and (json.Unmarshaler)[https://pkg.go.dev/encoding/json#Unmarshaler] interfaces.
+Go JitJSON provides 'just-in-time' compilation to encode / decode json.
+
+JitJSON can be applied for any generic types excluding pointers of types and interfaces. JitJSON uses `encoding/json` directly to perform json marshalling and unmarshalling. This allows for easy integration with existing types which either implement json struct tags or marshalling interfaces (json.Marshaler)[https://pkg.go.dev/encoding/json#Marshaler] or (json.Unmarshaler)[https://pkg.go.dev/encoding/json#Unmarshaler].
+
+Using `jitjson` will incur an overhead to perform json validation and reflection on types. This benefit of this library will be gained when marshalling / unmarshalling is not performed for every type or json encoding unless required. 
 
 JitJSON cannot be applied to pointer types and interfaces as:
 - Pointer types are stored as **type by JitJSON where **type cannot be parsed by `json.Unmarshal`.
 - Interfaces do not perform introspection perform `json.Unmarshal` on the underlying interface value.
 
-### Examples
+## Examples
 
 Just-in-time unmarshalling:
 ```
@@ -37,6 +41,7 @@ func main() {
     }
 
     fmt.Println(person)
+    // output: {Name:Willy Wonka Age:42}
 }
 ```
 
@@ -68,5 +73,6 @@ func main() {
     }
 
     fmt.Println(string(data))
+    // output: {"name":"Charlie Bucket","age":12}
 }
 ```
