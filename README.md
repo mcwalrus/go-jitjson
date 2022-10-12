@@ -4,21 +4,15 @@ Go JitJSON provides 'just-in-time' compilation to encode / decode json.
 
 ## Usage
 
-JitJSON can be applied for any generic types excluding pointers of types and interfaces. JitJSON uses `encoding/json` under the hood to perform json parsing. This allows for easy integration with existing types which either implement json struct tags or parse json interfaces [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) or [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler).
+JitJSON can be applied for any generic types excluding pointers of types and interfaces. JitJSON uses `encoding/json` to perform json parsing, which allows for easy integration with existing types which already implement json tags or [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) or [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) methods.
 
 ### Tradeoffs
 
-Using `jitjson` will incur an overhead to perform json validation and reflection on types. This benefit of this library will be gained when marshalling / unmarshalling is not performed for every type or json encoding unless required. 
-
-### Unhandled cases
-
-JitJSON cannot be applied to pointer types and interfaces as:
-- Pointer types are stored as **type by JitJSON where **type cannot be parsed by `json.Unmarshal`.
-- Interfaces do not perform introspection perform `json.Unmarshal` on the underlying interface value.
+Using `jitjson` will incur an overhead to perform json validation and reflection on types. This benefit of the library is gained when json parsing may not be required. 
 
 ## Examples
 
-Just-in-time unmarshalling:
+### Unmarshalling:
 ```
 import 	"github.com/mcwalrus/go-jitjson"
 
@@ -51,7 +45,7 @@ func main() {
 }
 ```
 
-Just-in-time marshalling:
+### Marshalling:
 ```
 import 	"github.com/mcwalrus/go-jitjson"
 
@@ -82,3 +76,11 @@ func main() {
     // output: {"name":"Charlie Bucket","age":12}
 }
 ```
+
+## Unhandled cases
+
+JitJSON cannot be applied to pointer types and interfaces as:
+- Pointer types are stored as `**type` by JitJSON, where `**type` cannot be parsed by `json.Unmarshal`.
+- Interfaces do not perform introspection perform `json.Unmarshal` on the underlying interface value.
+
+These maybe implemented on request.
