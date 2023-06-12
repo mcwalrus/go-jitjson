@@ -31,6 +31,8 @@ data, err = jit.Marshal()
 if err != nil {
     panic(err)
 }
+
+// TODO: use encoding 'data'.
 ```
 
 Decode json:
@@ -48,6 +50,8 @@ value, err = jit.Unmarshal()
 if err != nil {
     panic(err)
 }
+
+// TODO: use value 'value'.
 ```
 
 `encoding/json` module usage:
@@ -65,13 +69,50 @@ if err != nil {
 
 // return encoding of 'jit'.
 var data []byte
-data, err := json.Marshal(jit)
+data, err = json.Marshal(jit)
 if err != nil {
     panic(err)
 }
 ```
 
 ## Advanced usage
+
+If your retrieving an encoding or value from multiple places, jitjson.JitJSON caches encoding or values once returned:
+
+Encode json:
+```Go
+...
+
+// just-in-time 'encode'.
+data, err := jit.Marshal()
+if err != nil {
+    panic(err)
+}
+
+// first attempt to marshal caches encoding from jit - returns immediately.
+data, err = jit.Marshal()
+if err != nil {
+    panic(err)
+}
+```
+
+Decode json:
+```Go
+...
+
+// just-in-time 'decode'.
+var value string
+value, err = jit.Unmarshal()
+if err != nil {
+    panic(err)
+}
+
+// first attempt to unmarshal caches value from jit - returns immediately.
+value, err = jit.Unmarshal()
+if err != nil {
+    panic(err)
+}
+```
 
 In some use cases, you may want to encode or decode indexes/elements of arrays/slices, or properties/values of objects/maps in just-in-time fashion. See `jit_json_chuck_test.go` for examples of such cases.
 
