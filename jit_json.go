@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// JitJSON provides 'just-in-time' compilation to encode or decode json data or value of T.
+// JitJSON provides 'just-in-time' compilation to encode or decode json data or value of any type.
 // Use type to parse values to and from json / Go types only when needed.
 // See 'Marshal' and 'Unmarshal' methods for usage.
 type JitJSON[T any] struct {
@@ -13,7 +13,7 @@ type JitJSON[T any] struct {
 	val  *T
 }
 
-// NewJitJSON creates new jit-json based on either json encoding or a value of T.
+// NewJitJSON creates new jit-json based on either json encoding or a value of any type.
 //
 // The json encoding can be either of type []byte or json.RawMessage. nil is also a valid
 // value for an empty jit-json of no associated data. An empty jit-json can be useful for
@@ -46,7 +46,6 @@ func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
 }
 
 // MarshalJSON implements json.Marshaler.
-// For more documentation, see: https://pkg.go.dev/encoding/json#Marshaler.
 func (jit *JitJSON[T]) MarshalJSON() ([]byte, error) {
 	return jit.Marshal()
 }
@@ -72,7 +71,6 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-// For more documentation, see: https://pkg.go.dev/encoding/json#Unmarshaler.
 func (jit *JitJSON[T]) UnmarshalJSON(data []byte) error {
 	jit.val = nil
 	jit.data = data

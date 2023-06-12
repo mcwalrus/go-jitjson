@@ -8,13 +8,15 @@ Go JitJSON is a lightweight wrapper over [encoding/json](https://pkg.go.dev/enco
 
 I recommend to only use the module in cases where you may not need to encode or decode all encodings / values in memory.
 
-# Reference
+## Reference
 
-The type `jitjson.JitJSON` can contain a json encoding or value which can resolve encoding or decoding just-in-time by methods `Marshal()` and `Unmarshal()`. Type also implements [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) and [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) interfaces which makes it directly usable with module's functions `json.Marshal()` and `json.Unmarshal()`.
+See module documentation at: [pkg.go.dev/github.com/mcwalrus/go-jitjson](https://pkg.go.dev/github.com/mcwalrus/go-jitjson).
+
+At an overview, the type `jitjson.JitJSON` can contain a json encoding or value. Type can perform encoding of a value or decoding of an encoding in just-in-time fashion by use of methods `Marshal()` and `Unmarshal()`. Type also implements [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) and [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) interfaces where type can be used directly with module methods `json.Marshal()` and `json.Unmarshal()`.
 
 ## Examples
 
-Encode json: (marshalling)
+Encode json:
 ```Go
 // store value.
 var value = `"json encoded"`
@@ -31,7 +33,7 @@ if err != nil {
 }
 ```
 
-Decode json: (unmarshalling)
+Decode json:
 ```Go
 // store encoding.
 var data = []byte(`"json encoded"`)
@@ -69,10 +71,12 @@ if err != nil {
 }
 ```
 
-In advanced cases, you may want to encode or decode indexes/elements of arrays/slices, or properties/values of objects/maps in just-in-time fashion. See `jit_json_chuck_test.go` for examples of such cases.
+## Advanced usage
+
+In some use cases, you may want to encode or decode indexes/elements of arrays/slices, or properties/values of objects/maps in just-in-time fashion. See `jit_json_chuck_test.go` for examples of such cases.
 
 ## Contribute
 
-Feedback is always appreciated with my projects. Please submit or reach out to me at collierwm@outlook.com. 
+Feedback is always appreciated for my projects. Please submit or reach out to me through the issue tracker, or personally at collierwm@outlook.com.
 
 Cheers!
