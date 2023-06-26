@@ -12,8 +12,6 @@ I recommend to only use the module in cases where you may not need to encode or 
 
 See module documentation at: [pkg.go.dev/github.com/mcwalrus/go-jitjson](https://pkg.go.dev/github.com/mcwalrus/go-jitjson).
 
-At an overview, the type `jitjson.JitJSON` can contain a json encoding or value. Type can perform encoding of a value or decoding of an encoding in just-in-time fashion by use of methods `Marshal()` and `Unmarshal()`. Type also implements [json.Marshaler](https://pkg.go.dev/encoding/json#Marshaler) and [json.Unmarshaler](https://pkg.go.dev/encoding/json#Unmarshaler) interfaces where type can be used directly with module methods `json.Marshal()` and `json.Unmarshal()`.
-
 ## Examples
 
 Encode json:
