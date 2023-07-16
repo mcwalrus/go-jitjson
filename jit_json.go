@@ -13,16 +13,25 @@ type JitJSON[T any] struct {
 	val  *T
 }
 
+// JitJSONInterface allows for a dynamic type-set of JitJSON, with any value of T.
+// Interface is useful when json can be one of many types. Use type assertion or switching to get
+// selected type *JitJSON[T] from interface. See test cases for examples.
+type JitJSONInterface interface {
+	private()
+	json.Marshaler
+	json.Unmarshaler
+}
+
 // NewJitJSON creates new jit-json based on either json encoding or a value of any type.
 //
 // The json encoding can be either of type []byte or json.RawMessage. nil is also a valid
 // value for an empty jit-json of no associated data. An empty jit-json can be useful for
 // later use of unmarshalling. If the argument is neither of a json encoding or of type T,
 // an error will be returned.
-func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
+func NewJitJSON[T any](val interface{}) (*JitJSON[T], error) {
 	var jit JitJSON[T]
 	if val == nil {
-		return jit, nil
+		return &jit, nil
 	}
 
 	switch v := val.(type) {
@@ -39,10 +48,10 @@ func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
 			val: &v,
 		}
 	default:
-		return jit, fmt.Errorf("unexpected type: %T", val)
+		return &jit, fmt.Errorf("unexpected type: %T", val)
 	}
 
-	return jit, nil
+	return &jit, nil
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -98,3 +107,6 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 
 	return *jit.val, nil
 }
+
+// private implements JitJSONInterface.
+func (jit *JitJSON[T]) private() {}

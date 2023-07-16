@@ -8,6 +8,42 @@ import (
 	"github.com/mcwalrus/go-jitjson"
 )
 
+func TestJitJSONInterface(t *testing.T) {
+	var _ jitjson.JitJSONInterface = &jitjson.JitJSON[int]{}
+}
+
+func TestJitJSONInterfaceSwitch(t *testing.T) {
+	var i jitjson.JitJSONInterface = &jitjson.JitJSON[int]{}
+	switch i.(type) {
+	case *jitjson.JitJSON[int]:
+		break
+	default:
+		t.Error("expected type above")
+	}
+}
+
+func TestJitJSONInterfaceMultipleTypes(t *testing.T) {
+	var (
+		err error
+		iS  = make([]jitjson.JitJSONInterface, 3)
+	)
+
+	iS[0], err = jitjson.NewJitJSON[int](1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	iS[1], err = jitjson.NewJitJSON[float64](2.0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	iS[2], err = jitjson.NewJitJSON[string]("this works!")
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestNilTypeUnmarshal(t *testing.T) {
 	var expected = struct{}{}
 
@@ -749,7 +785,7 @@ func TestArrayMarshalJSON(t *testing.T) {
 		expected = []byte(`[1,2,3,4,5]`)
 	)
 
-	var jit = make([]jitjson.JitJSON[int], 5)
+	var jit = make([]*jitjson.JitJSON[int], 5)
 	for i := range jit {
 		jit[i], err = jitjson.NewJitJSON[int](i + 1)
 		if err != nil {
