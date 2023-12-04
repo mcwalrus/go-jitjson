@@ -90,3 +90,71 @@ func TestUnmarshal(t *testing.T) {
 		t.Error("values do not match")
 	}
 }
+
+func TestJITInterfaceSwitch(t *testing.T) {
+
+	var i jitjson.JITInterface = &jitjson.JitJSON[int]{}
+	switch i.(type) {
+	case *jitjson.JitJSON[int]:
+		break
+	default:
+		t.Error("expected type above")
+	}
+}
+
+func TestJITInterface(t *testing.T) {
+	var (
+		err error
+		arr = make([]jitjson.JITInterface, 3)
+	)
+
+	arr[0], err = jitjson.NewJitJSON[int](1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	arr[1], err = jitjson.NewJitJSON[float64](2.0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	arr[2], err = jitjson.NewJitJSON[string]("it works!")
+	if err != nil {
+		t.Error(err)
+	}
+
+	for _, v := range arr {
+		switch v := v.(type) {
+
+		case jitjson.JitJSON[int]:
+			i, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if i != 1 {
+				t.Error("unexpected value")
+			}
+
+		case jitjson.JitJSON[float64]:
+			f, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if f != 2.0 {
+				t.Error("unexpected value")
+			}
+
+		case jitjson.JitJSON[string]:
+			s, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if s != "it works!" {
+				t.Error("unexpected value")
+			}
+
+		default:
+			t.Error("unexpected type")
+		}
+	}
+}
