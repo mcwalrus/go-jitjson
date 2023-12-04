@@ -91,17 +91,6 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
-func TestJITInterfaceSwitch(t *testing.T) {
-
-	var i jitjson.JITInterface = &jitjson.JitJSON[int]{}
-	switch i.(type) {
-	case *jitjson.JitJSON[int]:
-		break
-	default:
-		t.Error("expected type above")
-	}
-}
-
 func TestJITInterface(t *testing.T) {
 	var (
 		err error
@@ -156,5 +145,32 @@ func TestJITInterface(t *testing.T) {
 		default:
 			t.Error("unexpected type")
 		}
+	}
+}
+
+func TestJSONDecoder(t *testing.T) {
+	type Person struct {
+		Name string
+		Age  int
+		City string
+	}
+
+	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
+
+	jit, err := jitjson.NewJitJSON[Person](jsonData)
+	if err != nil {
+		t.Error(err)
+	}
+
+	var p Person
+	dec := json.NewDecoder(jit)
+	dec.DisallowUnknownFields()
+	err = dec.Decode(&p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if p.Name != "John" || p.Age != 30 || p.City != "New York" {
+		t.Error("values do not match")
 	}
 }

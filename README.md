@@ -132,6 +132,50 @@ func main() {
 }
 ```
 
+### json.Decoder with JitJSON:
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+type Person struct {
+    Name string
+    Age  int
+    City string
+}
+
+func main() {
+	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
+
+	// Create JitJSON:
+    jit, err := jitjson.NewJitJSON[Person](jsonData)
+    if err != nil {
+        panic(err)
+    }
+
+    // Create a json.Decoder:
+	dec := json.NewDecoder(jit)
+	dec.DisallowUnknownFields()
+
+    // Decode Person:
+	var p Person
+	err = dec.Decode(&p)
+	if err != nil {
+        panic(err)
+    }
+
+     // Verify Person:
+	if p.Name != "John" || p.Age != 30 || p.City != "New York" {
+		panic("wrong person!")
+	}
+
+    fmt.Println(p) // Output: {John 30 New York}
+}
+```
 
 ## About
 

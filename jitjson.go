@@ -114,3 +114,14 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 
 	return *jit.val, nil
 }
+
+// Read implements the io.Reader interface.
+// It marshals the value of JitJSON[T] and copies the result to the provided byte slice.
+// If the value of JitJSON[T] is nil, the method returns 0, nil.
+func (jit JitJSON[T]) Read(p []byte) (n int, err error) {
+	data, err := jit.Marshal()
+	if err != nil {
+		return 0, nil
+	}
+	return copy(p, data), nil
+}
