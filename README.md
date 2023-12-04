@@ -4,9 +4,11 @@ go-jitjson provides a just-in-time (JIT) approach to JSON encoding and decoding 
 
 It's designed to be a lightweight wrapper of the [encoding/json](https://pkg.go.dev/encoding/json) module. The library provides a type `JitJSON[T any]`, which can hold either a JSON encoding or a value of any type `T`. The `JITInterface` interface type enables dynamic type assignment for `JitJSON[T any]`, where `T` can be any type. 
 
+## Usage
+
 See [API reference](https://pkg.go.dev/github.com/mcwalrus/go-jitjson) for more documentation.
 
-## Usage
+## Examples
 
 ### Encoding with JitJSON:
 
