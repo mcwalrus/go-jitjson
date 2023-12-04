@@ -1,10 +1,10 @@
-# Go JitJSON
+# Go-JitJSON
 
-The go-jitjson library provides a just-in-time (JIT) approach to JSON encoding and decoding in Go. It's designed to be a lightweight wrapper of [encoding/json](https://pkg.go.dev/encoding/json) module. See [module documentation](pkg.go.dev/github.com/mcwalrus/go-jitjson) for details.
+go-jitjson provides a just-in-time (JIT) approach to JSON encoding and decoding in Go. It's designed to be a lightweight wrapper of the [encoding/json](https://pkg.go.dev/encoding/json) module. The library provides a type `JitJSON[T any]`, which can hold either a JSON encoding or a value of any type `T`. For module documentation, see the [API reference](https://pkg.go.dev/github.com/mcwalrus/go-jitjson).
 
 ## Usage
 
-### Encode with JitJSON:
+### Encoding with JitJSON:
 
 ```Go
 package main
@@ -44,7 +44,7 @@ func main() {
 }
 ```
 
-### Decode with JitJSON:
+### Decoding with JitJSON:
 
 ```Go
 package main
@@ -78,3 +78,7 @@ func main() {
     fmt.Println(value) // Output: {John 30 New York}
 }
 ```
+
+## About
+
+This module is maintained by Max Collier under an MIT License Agreement.
