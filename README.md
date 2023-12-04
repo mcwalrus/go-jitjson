@@ -1,6 +1,8 @@
 # Go-JitJSON
 
-go-jitjson provides a just-in-time (JIT) approach to JSON encoding and decoding in Go. It's designed to be a lightweight wrapper of the [encoding/json](https://pkg.go.dev/encoding/json) module. The library provides a type `JitJSON[T any]`, which can hold either a JSON encoding or a value of any type `T`. For module documentation, see the [API reference](https://pkg.go.dev/github.com/mcwalrus/go-jitjson).
+go-jitjson provides a just-in-time (JIT) approach to JSON encoding and decoding in Go. It's designed to be a lightweight wrapper of the [encoding/json](https://pkg.go.dev/encoding/json) module. The library provides a type `JitJSON[T any]`, which can hold either a JSON encoding or a value of any type `T`. The `JITInterface` interface type enables dynamic type assignment for `JitJSON[T any]`, where `T` can be any type. 
+
+See [API reference](https://pkg.go.dev/github.com/mcwalrus/go-jitjson) for more documentation.
 
 ## Usage
 
@@ -78,6 +80,54 @@ func main() {
     fmt.Println(value) // Output: {John 30 New York}
 }
 ```
+
+### Dynamic type-set with JitJSON:
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+func main() {
+	
+    // JitJSON.
+    var (
+		err error
+        jit jitjson.JITInterface
+	)
+
+    // ... T of int.
+	jit, err = jitjson.NewJitJSON[int](1)
+	if err != nil {
+		panic(err)
+	}
+
+    // ... of float64.
+    jit, err = jitjson.NewJitJSON[float64](2.0)
+	if err != nil {
+		panic(err)
+	}
+
+    // ... of string.
+	jit, err = jitjson.NewJitJSON[string]("another type!")
+	if err != nil {
+		panic(err)
+	}
+
+    // Convert to JitJSON[T] type to unmarshal: 
+    v := (jit).(jitjson.JitJSON[string])
+    s, err := v.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(s) // Output: another type!
+}
+```
+
 
 ## About
 
