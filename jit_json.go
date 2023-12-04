@@ -1,3 +1,5 @@
+// Package jitjson provides a Just-In-Time JSON parser for Go.
+
 package jitjson
 
 import (
@@ -5,20 +7,18 @@ import (
 	"fmt"
 )
 
-// JitJSON provides 'just-in-time' compilation to encode or decode json data or value of any type.
-// Use type to parse values to and from json / Go types only when needed.
-// See 'Marshal' and 'Unmarshal' methods for usage.
+// JitJSON[T any] provides 'just-in-time' (JIT) JSON parsing capabilities in Go.
+// It can hold a JSON encoding or a value of any type (T). The type T can be parsed to and from JSON/Go types only when needed.
+// This is achieved through the 'Marshal' and 'Unmarshal' methods of JitJSON.
 type JitJSON[T any] struct {
 	data []byte
 	val  *T
 }
 
-// NewJitJSON creates new jit-json based on either json encoding or a value of any type.
-//
-// The json encoding can be either of type []byte or json.RawMessage. nil is also a valid
-// value for an empty jit-json of no associated data. An empty jit-json can be useful for
-// later use of unmarshalling. If the argument is neither of a json encoding or of type T,
-// an error will be returned.
+// NewJitJSON[T any] constructs a new JitJSON[T] type.
+// The constructor accepts only values of JSON encoding or value of type T, otherwise an error is returned.
+// JSON encoding can be either of type []byte or json.RawMessage. Nil is also a valid value for JitJSON[T] of no associated data.
+// Empty values of JitJSON[T] is also valid constructors. If the value provided of T is nil, the method 'Unmarshal' will return the zero value of type T.
 func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
 	var jit JitJSON[T]
 	if val == nil {
@@ -45,18 +45,30 @@ func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
 	return jit, nil
 }
 
-// MarshalJSON implements json.Marshaler.
+// MarshalJSON implements the json.Marshaler interface.
+// It returns the JSON encoding of the JitJSON[T] value by calling the Marshal method.
+// If an error occurs during the marshaling process, it returns the error.
 func (jit *JitJSON[T]) MarshalJSON() ([]byte, error) {
 	return jit.Marshal()
 }
 
-// Marshal performs 'json.Marshal' for value of JitJSON. If the value is already resolved
-// for, the encoding will be returned without re-evaluation of 'json.Marshal'.
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// It sets the internal data of the JitJSON[T] to the provided byte slice and resets the value to nil.
+// This method does not perform the actual unmarshaling; the unmarshaling is deferred until the Unmarshal method is called.
+// This method always returns nil as error since it only assigns the input byte slice to the internal data.
+func (jit *JitJSON[T]) UnmarshalJSON(data []byte) error {
+	jit.val = nil
+	jit.data = data
+	return nil
+}
+
+// Marshal performs the equivalent of 'json.Marshal' for the value of JitJSON[T].
+// If the value has already been resolved, the method returns the existing encoding without re-evaluating 'json.Marshal'.
+// If the value of JitJSON[T] is nil, the method returns nil.
 func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	if jit.data != nil {
 		return jit.data, nil
 	}
-
 	if jit.val == nil {
 		return nil, nil
 	}
@@ -70,21 +82,13 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	return jit.data, nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-func (jit *JitJSON[T]) UnmarshalJSON(data []byte) error {
-	jit.val = nil
-	jit.data = data
-
-	return nil
-}
-
-// Unmarshal performs 'json.Unmarshal' for encoding of JitJSON. If the value is already
-// resolved for, the value is returned without re-evaluation of 'json.Unmarshal'.
+// Unmarshal performs the equivalent of 'json.Unmarshal' for the encoded value of JitJSON[T].
+// If the value has already been resolved, the method returns the existing value without re-evaluating 'json.Unmarshal'.
+// If the encoded value of JitJSON[T] is nil, the method returns the zero value of type T.
 func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	if jit.val != nil {
 		return *jit.val, nil
 	}
-
 	var val T
 	if jit.data == nil {
 		return val, nil

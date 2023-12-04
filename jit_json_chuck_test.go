@@ -7,7 +7,7 @@ import (
 	"github.com/mcwalrus/go-jitjson"
 )
 
-// see tests for jit-json parsing for arrays / objects.
+// see test cases for jit-json parsing for arrays / objects with large number of elements.
 var (
 	arrayChuckData = []byte(`{
 		"array": [
