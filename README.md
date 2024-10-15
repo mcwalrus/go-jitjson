@@ -1,12 +1,16 @@
 # Go-JitJSON
 
-go-jitjson provides a just-in-time (JIT) capability for encoding and decoding JSON in Go. 
+`go-jitjson` is a Go library that provides just-in-time (JIT) JSON parsing capability to defer marshaling and unmarshaling processes until they are actually needed. The library supports type safety through use of generics and uses standard Go interfaces (`json.Marshaler`, `json.Unmarshaler`, and `io.Reader`) to make it easy to integrate with existing projects.
 
-It's designed as a lightweight library over [encoding/json](https://pkg.go.dev/encoding/json). At an overview, the library provides a type `JitJSON[T any]`, which can hold either a JSON encoding or a value of any type `T`. The `JITInterface` interface type enables dynamic type assignment for `JitJSON[T any]`, where `T` can be any type. `JitJSON[T any]` is also implemented as an `io.Reader`. I would recommend to include this library in projects which involve large data processing or a need to avoid encoding and decoding JSON where possible.
+## Installation
 
-See [API reference](https://pkg.go.dev/github.com/mcwalrus/go-jitjson) for more documentation.
+```bash
+go get github.com/mcwalrus/gp-jitjson
+```
 
-## Examples
+## Usage
+
+The library provides a generic type `JitJSON[T any]`, capable of holding either JSON-encoded data or a value of type `T`. The `AnyJitJSON` interface allows for flexible dynamic type handling with `JitJSON[T any]`, supporting any Go type. Additionally, `JitJSON[T any]` implements the `io.Reader` interface, enabling integration with `json.Decoder`.
 
 ### Encoding with JitJSON:
 
@@ -83,7 +87,7 @@ func main() {
 }
 ```
 
-### Dynamic type-set with JitJSON:
+### Dynamic type assignment:
 
 ```Go
 package main
@@ -98,7 +102,7 @@ func main() {
     // JitJSON.
     var (
 		err error
-        jit jitjson.JITInterface
+        jit jitjson.AnyJitJSON
 	)
 
     // ... T of int.
@@ -130,7 +134,7 @@ func main() {
 }
 ```
 
-### json.Decoder with JitJSON:
+### Custom decoders:
 
 ```Go
 package main
@@ -165,11 +169,6 @@ func main() {
 	if err != nil {
         panic(err)
     }
-
-     // Verify Person:
-	if p.Name != "John" || p.Age != 30 || p.City != "New York" {
-		panic("wrong person!")
-	}
 
     fmt.Println(p) // Output: {John 30 New York}
 }

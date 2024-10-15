@@ -15,10 +15,10 @@ type JitJSON[T any] struct {
 	val  *T
 }
 
-// JITInterface is implemented by the JitJSON[T any] type, where T can be any type.
-// This means you can use JITInterface with any underlying type that can be marshaled or unmarshaled to / from JSON.
+// AnyJitJSON is implemented by the JitJSON[T any] type, where T can be any type.
+// This means you can use AnyJitJSON with any underlying type that can be marshaled or unmarshaled to / from JSON.
 // See test file for examples.
-type JITInterface interface {
+type AnyJitJSON interface {
 	private()
 	json.Marshaler
 	json.Unmarshaler
@@ -28,10 +28,10 @@ type JITInterface interface {
 // The constructor accepts only values of JSON encoding or value of type T, otherwise an error is returned.
 // JSON encoding can be either of type []byte or json.RawMessage. Nil is also a valid value for JitJSON[T] of no associated data.
 // Empty values of JitJSON[T] is also valid constructors. If the value provided of T is nil, the method 'Unmarshal' will return the zero value of type T.
-func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
+func NewJitJSON[T any](val interface{}) (*JitJSON[T], error) {
 	var jit JitJSON[T]
 	if val == nil {
-		return jit, nil
+		return &jit, nil
 	}
 
 	switch v := val.(type) {
@@ -48,19 +48,19 @@ func NewJitJSON[T any](val interface{}) (JitJSON[T], error) {
 			val: &v,
 		}
 	default:
-		return jit, fmt.Errorf("unexpected type: %T", val)
+		return nil, fmt.Errorf("unexpected type: %T", val)
 	}
 
-	return jit, nil
+	return &jit, nil
 }
 
-// private implements JITInterface.
-func (jit JitJSON[T]) private() {}
+// private implements AnyJitJSON.
+func (jit *JitJSON[T]) private() {}
 
 // MarshalJSON implements the json.Marshaler interface.
 // It returns the JSON encoding of the JitJSON[T] value by calling the Marshal method.
 // If an error occurs during the marshaling process, it returns the error.
-func (jit JitJSON[T]) MarshalJSON() ([]byte, error) {
+func (jit *JitJSON[T]) MarshalJSON() ([]byte, error) {
 	return jit.Marshal()
 }
 
@@ -68,7 +68,7 @@ func (jit JitJSON[T]) MarshalJSON() ([]byte, error) {
 // It sets the internal data of the JitJSON[T] to the provided byte slice and resets the value to nil.
 // This method does not perform the actual unmarshaling; the unmarshaling is deferred until the Unmarshal method is called.
 // This method always returns nil as error since it only assigns the input byte slice to the internal data.
-func (jit JitJSON[T]) UnmarshalJSON(data []byte) error {
+func (jit *JitJSON[T]) UnmarshalJSON(data []byte) error {
 	jit.val = nil
 	jit.data = data
 	return nil
