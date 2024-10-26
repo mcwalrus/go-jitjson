@@ -18,101 +18,11 @@ go get github.com/mcwalrus/go-jitjson
 ## Usage
 
 JitJSON provides a generic type `JitJSON[T any]` that can hold either JSON-encoded data or a value of type `T`. 
-The type supports both marshaling (Go → JSON) and unmarshaling (JSON → Go) operations, performing the conversion 
-only when needed. Both parse operations are expensive when unnecessarily performed and provides opportunity for
-conditional parsing on select usage.
-
-Caveat: If you intend to use all json data at once
+The type supports both marshaling (Go → JSON) and unmarshaling (JSON → Go) operations, to perform conversions
+only when needed. Both parsing operations are expensive when performed unnecessarily, which can be avoided by
+conditional parsing.
 
 ## Examples
-
-The standard approach is for json marshalling is:
-
-```Go
-// Parses everything immediately:
-var p Person
-err  = json.Unmarshal(data, &p)
-if err != nil {
-    return nil, err
-}
-```
-
-
-
-```Go
-// Delayed parsing:
-var jitPerson jitjson.JitJSON[Person]
-_ = json.Unmarshal(largeJSON, &jitPerson) 
-
-// Do some work ...
-runSomeCode(...)
-countToTen(...)
-tieSocks(...)
-
-// Then parse!
-parsedPerson, _ := jitPerson.Unmarshal()
-fmt.Println(parsedPerson)
-```
-
-### Updating Existing Code to Use JitJSON
-
-To update an existing codebase to use `jitjson`, you need to replace instances of standard JSON marshaling and unmarshaling with `jitjson` equivalents. Below is an example demonstrating this transition:
-
-For decoding, this looks like:
-
-```Go
-// Parse immediately
-var person Person
-err := json.Unmarshal(jsonData, &person)
-if err != nil {
-    panic(err)
-}
-```
-
-Becomes
-
-```Go
-// Deferred parsing:
-var jitPerson jitjson.JitJSON[Person]
-err = json.Unmarshal(jsonData, &jitPerson)
-if err != nil {
-    panic(err)
-}
-
-// Parse only when needed:
-person, err := jitPerson.Unmarshal()
-if err != nil {
-    panic(err)
-}
-```
-
-Likewise, for encoding:
-
-```Go
-// Marshal immediately
-jsonData, err := json.Marshal(person)
-if err != nil {
-    panic(err)
-}
-```
-
-Becomes
-
-```Go
-// Deferred marshaling:
-jitPerson := jitjson.NewJitJSON[Person](person)
-
-// Marshal only when needed:
-jsonData, err := jitPerson.Marshal()
-if err != nil {
-    panic(err)
-}
-```
-
-By following this pattern, you can incrementally update your codebase to leverage the performance and memory benefits of `jitjson`.
-
-jitjson follows the `json.Marshaller` and `json.Unmarshaller` interfaces to allow easy replacement of the standard library where appropriate.
-
 
 ### Encoding with JitJSON:
 
@@ -183,50 +93,7 @@ func main() {
 }
 ```
 
-### AnyJitJSON 
-
-Sometimes we have a range of types we are trying to parse or reference by jitjson. To do so, we use the `jitjson.AnyJitJSON` construct which can be dynamically type checked to decode later over a range of types.
-
-```Go
-package main
-
-import (
-    "fmt"
-    "github.com/mcwalrus/go-jitjson"
-)
-
-func main() {
-    var jit jitjson.AnyJitJSON
-
-    // ... T of int.
-    jit = jitjson.NewJitJSON[int](1)
-
-    // ... of float64.
-    jit = jitjson.NewJitJSON[float64](2.0)
-
-    // ... of string.
-    jit = jitjson.NewJitJSON[string]("another type!")
-
-    // resolve with json.Marshal
-    data, err := json.Marshal(jit)
-    if err != nil {
-        panic(err)
-    }
-
-    // or with type interference
-    v := (jit).(jitjson.JitJSON[string])
-    s, err := v.Unmarshal()
-    if err != nil {
-        panic(err)
-    }
-
-    // Output: another type!
-    fmt.Println(string(data)) 
-    fmt.Println(s)
-}
-```
-
-Note, this is typically only used for unmarshalling. In the case of marshalling, the type of `jitjson.JitJSON[T]` needs to be known upfront. Attempts to marshal jitjson with `json.Unmarshal(data, &jit)` will work, but will fail when jit.Unmarshal() is called. If `jit` is nil, a nil pointer panic will occur, so `jitjson.AnyJitJSON` so jit will need to be set to a defined `jitjson.JitJSON` type first. 
+Benefit: `jitjson.JitJSON[T]` provides `json.Marshaller` and `json.Unmarshaller` interface methods to allow easy replacement of the standard library where appropriate.
 
 ### Custom json.Decoder:
 
@@ -264,7 +131,7 @@ func main() {
 }
 ```
 
-### Unmarshal array iteratively
+### Unmarshalling a slice:
 
 ```Go
 package main
@@ -286,28 +153,24 @@ func main() {
         {"Name":"Jane","Age":25,"City":"Los Angeles"}
     ]`)
 
-    // Create JitJSON for array of Person:
-    var jitArray []jitjson.JitJSON[Person]
-    err := json.Unmarshal(jsonArray, &jitArray)
+    // A JitJSON slice of People:
+    var jitSlice []jitjson.JitJSON[Person]
+    err := json.Unmarshal(jsonArray, &jitSlice)
     if err != nil {
         panic(err)
     }
 
-    // Iterate and print each person:
-    for _, jitPerson := range jitArray {
-        person, err := jitPerson.Unmarshal()
-        if err != nil {
-            panic(err)
-        }
-
-        fmt.Printf("Person: %+v\n", person)
+    // Unmarshal only the first index:
+    jit, err = jitSlice[0].Unmarshal()
+    if err != nil {
+        panic(err)
     }
+
+    fmt.Println(value) // Output: {John 30 New York}
 }
 ```
 
-### Unmarshal map iteratively
-
-In some cases, you might have a map of JSON objects which you want to iterate across:
+### Unmarshalling a map:
 
 ```Go
 package main
@@ -330,30 +193,125 @@ func main() {
         "550e8400-e29b-41d4-a716-446655440001": {"Name":"Jane","Age":25,"City":"Los Angeles"}
     }`)
 
-    // Create JitJSON for map of UUID to Person:
+    // A JitJSON map of UUIDs to People:
     var jitMap map[uuid.UUID]jitjson.JitJSON[Person]
     err := json.Unmarshal(jsonMap, &jitMap)
     if err != nil {
         panic(err)
     }
 
-    // Iterate and print each person:
-    for id, jitPerson := range jitMap {
-        person, err := jitPerson.Unmarshal()
-        if err != nil {
-            panic(err)
-        }
 
-        fmt.Printf("ID: %s, Person: %+v\n", id, person)
+    jit, ok := jitMap["550e8400-e29b-41d4-a716-446655440000"]
+    if !ok {
+        panic("missing person")
     }
+    person, err := jit.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+    
+    fmt.Println(person) // Output: {John 30 New York}
 }
 ```
 
-This example demonstrates how to handle a map where the keys are UUIDs and the values are JSON objects. The `jitjson.JitJSON` type is used to defer the unmarshaling of the map until it's actually needed.
+### Unmarshalling nested structures
 
+```Go
+package main
 
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
 
+type Address struct {
+    Street string
+    City   string
+    Zip    string
+}
 
+type Person struct {
+    Name    string
+    Age     int
+    Address jitjson.JitJSON[Address]    
+}
 
+func main() {
+    jsonData := []byte(`{
+        "Name": "John",
+        "Age": 30,
+        "Address": {
+            "Street": "123 Main St",
+            "City": "New York",
+            "Zip": "10001"
+        }
+    }`)
 
+    jit := jitjson.NewJitJSON[Person](jsonData)
 
+    // Decode person
+    person, err := jit.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+
+    // Decode the address
+    address, err := person.Address.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(address) // Output: {123 Main St New York 10001}
+}
+```
+
+### Dynamic Type Parsing
+
+To handle dynamic parsing of JSON, we can use `AnyJitJSON` to optionally set `NewJitJSON[T]` types.
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+func main() {
+    var jit jitjson.AnyJitJSON
+
+    // Support for multiple types
+    jit = jitjson.NewJitJSON[int](1)
+    jit = jitjson.NewJitJSON[float64](2.0)
+    jit = jitjson.NewJitJSON[string]("another type!")
+
+    // Resolve by json.Marshal
+    data, err := json.Marshal(jit)
+    if err != nil {
+        panic(err)
+    }
+
+    // Unmarshal by type inference
+    v := (jit).(jitjson.JitJSON[string])
+    s, err := v.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+
+    // Output: another type!
+    fmt.Println(string(data))
+    fmt.Println(s)
+}
+```
+
+Note that `AnyJitJSON` can fail on json parsing
+
+use to avoid panics. type assertions are required for unmarshaling. 
+
+This feature is primarily designed for unmarshaling use cases and may require additional error handling for type assertions.
+
+Note, this is typically only used for unmarshalling. In the case of marshalling, the type of `jitjson.JitJSON[T]` needs to be known upfront. Attempts to marshal jitjson with `json.Unmarshal(data, &jit)` will work, but will fail when jit.Unmarshal() is called. If `jit` is nil, a nil pointer panic will occur, so `jitjson.AnyJitJSON` so jit will need to be set to a defined `jitjson.JitJSON` type first.
+
+## About
+
+This module is maintained by Max Collier under an MIT License Agreement.

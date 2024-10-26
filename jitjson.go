@@ -10,7 +10,7 @@ import (
 // Parsing to/from JSON is deferred until needed via Marshal and Unmarshal methods.
 // You can think of JitJSON[T] as a lazy JSON parser.
 type JitJSON[T any] struct {
-	data []byte
+	data json.RawMessage
 	val  *T
 }
 
@@ -78,21 +78,11 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	return *jit.val, nil
 }
 
-// Read implements the io.Reader interface to allow JitJSON[T] to be used with json.Decoder.
+// Read allows JitJSON[T] to be used with json.Decoder or other readers which use io.Reader.
 func (jit JitJSON[T]) Read(p []byte) (n int, err error) {
 	data, err := jit.Marshal()
 	if err != nil {
 		return 0, nil
 	}
 	return copy(p, data), nil
-}
-
-func (jit *JitJSON[T]) private() {}
-
-// AnyJitJSON allows dynamic type parsing for JIT JSON types.
-// Type implements json.Marshaler and json.Unmarshaler to allow for deferred parsing.
-type AnyJitJSON interface {
-	private()
-	json.Marshaler
-	json.Unmarshaler
 }
