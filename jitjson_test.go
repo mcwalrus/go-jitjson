@@ -9,36 +9,38 @@ import (
 	"github.com/mcwalrus/go-jitjson"
 )
 
-func TestNewJitJSON(t *testing.T) {
-	type Person struct {
-		Name string
-		Age  int
-		City string
-	}
+type Person struct {
+	Name string
+	Age  int
+	City string
+}
 
+func TestNewJitJSON(t *testing.T) {
 	person := Person{
 		Name: "John",
 		Age:  30,
 		City: "New York",
 	}
 
-	_, err := jitjson.NewJitJSON[Person](person)
-	if err != nil {
-		t.Error(err)
+	jit := jitjson.NewJitJSON[Person](person)
+	if jit == nil {
+		t.Error("unexpected nil value")
 	}
 }
 
-func TestNilJitJSON(t *testing.T) {
+func TestBytesToJitJSON(t *testing.T) {
+	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
+
+	jit := jitjson.BytesToJitJSON[Person](jsonData)
+	if jit == nil {
+		t.Error("unexpected nil value")
+	}
+}
+
+func TestJitJSON_Nil(t *testing.T) {
 
 	t.Run("nil value pointer", func(t *testing.T) {
-		jit, err := jitjson.NewJitJSON[*int](nil)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if jit == nil {
-			t.Error("unexpected nil value")
-		}
+		jit := jitjson.NewJitJSON[*int](nil)
 
 		data, err := jit.Marshal()
 		if err != nil {
@@ -58,14 +60,7 @@ func TestNilJitJSON(t *testing.T) {
 	})
 
 	t.Run("nil value non pointer", func(t *testing.T) {
-		jit, err := jitjson.NewJitJSON[int](nil)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if jit == nil {
-			t.Error("unexpected nil value")
-		}
+		jit := jitjson.NewJitJSON[int](0)
 
 		data, err := jit.Marshal()
 		if err != nil {
@@ -85,23 +80,14 @@ func TestNilJitJSON(t *testing.T) {
 	})
 }
 
-func TestJitJSONMarshal(t *testing.T) {
-	type Person struct {
-		Name string
-		Age  int
-		City string
-	}
-
+func TestJitJSON_Marshal(t *testing.T) {
 	person := Person{
 		Name: "John",
 		Age:  30,
 		City: "New York",
 	}
 
-	jit, err := jitjson.NewJitJSON[Person](person)
-	if err != nil {
-		t.Error(err)
-	}
+	jit := jitjson.NewJitJSON[Person](person)
 
 	p1, err := jit.Marshal()
 	if err != nil {
@@ -118,19 +104,10 @@ func TestJitJSONMarshal(t *testing.T) {
 	}
 }
 
-func TestJitJSONUnmarshal(t *testing.T) {
-	type Person struct {
-		Name string
-		Age  int
-		City string
-	}
-
+func TestJitJSON_Unmarshal(t *testing.T) {
 	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
 
-	jit, err := jitjson.NewJitJSON[Person](jsonData)
-	if err != nil {
-		t.Error(err)
-	}
+	jit := jitjson.BytesToJitJSON[Person](jsonData)
 
 	p1, err := jit.Unmarshal()
 	if err != nil {
@@ -149,24 +126,12 @@ func TestJitJSONUnmarshal(t *testing.T) {
 }
 
 func TestAnyJitJSON(t *testing.T) {
-	var (
-		err error
-		arr = make([]jitjson.AnyJitJSON, 3)
-	)
 
-	arr[0], err = jitjson.NewJitJSON[int](1)
-	if err != nil {
-		t.Error(err)
-	}
-
-	arr[1], err = jitjson.NewJitJSON[float64](2.0)
-	if err != nil {
-		t.Error(err)
-	}
-
-	arr[2], err = jitjson.NewJitJSON[string]("it works!")
-	if err != nil {
-		t.Error(err)
+	// basic types
+	var arr = []jitjson.AnyJitJSON{
+		jitjson.NewJitJSON[int](1),
+		jitjson.NewJitJSON[float64](2.0),
+		jitjson.NewJitJSON[string]("it works!"),
 	}
 
 	for _, v := range arr {
@@ -203,27 +168,59 @@ func TestAnyJitJSON(t *testing.T) {
 			t.Error("unexpected type")
 		}
 	}
-}
 
-func TestJitJSONDecoder(t *testing.T) {
-	type Person struct {
-		Name string
-		Age  int
-		City string
+	// more types
+	arr = []jitjson.AnyJitJSON{
+		jitjson.NewJitJSON[bool](true),
+		jitjson.NewJitJSON[[]int]([]int{1, 2, 3}),
+		jitjson.NewJitJSON[map[string]string](map[string]string{"key": "value"}),
 	}
 
+	for _, v := range arr {
+		switch v := v.(type) {
+
+		case *jitjson.JitJSON[bool]:
+			b, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if b != true {
+				t.Error("unexpected value")
+			}
+
+		case *jitjson.JitJSON[[]int]:
+			arr, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if len(arr) != 3 || arr[0] != 1 || arr[1] != 2 || arr[2] != 3 {
+				t.Error("unexpected value")
+			}
+
+		case *jitjson.JitJSON[map[string]string]:
+			m, err := v.Unmarshal()
+			if err != nil {
+				t.Error(err)
+			}
+			if len(m) != 1 || m["key"] != "value" {
+				t.Error("unexpected value")
+			}
+
+		default:
+			t.Error("unexpected type")
+		}
+	}
+}
+
+func TestJitJSON_JsonDecoder(t *testing.T) {
 	t.Run("valid JSON", func(t *testing.T) {
 		jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
-		jit, err := jitjson.NewJitJSON[Person](jsonData)
-		if err != nil {
-			t.Error(err)
-		}
+		jit := jitjson.BytesToJitJSON[Person](jsonData)
 
 		var p Person
 		dec := json.NewDecoder(jit)
 		dec.DisallowUnknownFields()
-		err = dec.Decode(&p)
-		if err != nil {
+		if err := dec.Decode(&p); err != nil {
 			t.Error(err)
 		}
 
@@ -234,58 +231,80 @@ func TestJitJSONDecoder(t *testing.T) {
 
 	t.Run("invalid JSON", func(t *testing.T) {
 		jsonData := []byte(`{"Name":"John","Age":30,"City":"New York","Country":"USA"}`)
-		jit, err := jitjson.NewJitJSON[Person](jsonData)
-		if err != nil {
-			t.Error(err)
-		}
+		jit := jitjson.BytesToJitJSON[Person](jsonData)
 
 		var p Person
 		dec := json.NewDecoder(jit)
 		dec.DisallowUnknownFields()
-		err = dec.Decode(&p)
 
-		if err == nil {
+		if err := dec.Decode(&p); err == nil {
 			t.Error("expected error")
 		}
 	})
 }
 
-func TestMarshalJitJSONBySlice(t *testing.T) {
+func TestJitJSON_UnmarshalMap(t *testing.T) {
+	jsonData := []byte(`{
+		"person1": {"Name":"John","Age":30,"City":"New York"},
+		"person2": {"Name":"Jane","Age":25,"City":"Los Angeles"}
+	}`)
 
-	type Person struct {
-		Name string
-		Age  int
-		City string
-	}
-
-	// Large JSON array of Person objects
-	jsonData := []byte(`[
-				{"Name":"John","Age":30,"City":"New York"},
-				{"Name":"Jane","Age":25,"City":"Los Angeles"},
-				{"Name":"Doe","Age":40,"City":"Chicago"},
-				null, null, null
-			]`)
-
-	var people []jitjson.JitJSON[*Person]
-	err := json.Unmarshal(jsonData, &people)
+	var result map[string]*jitjson.JitJSON[Person]
+	err := json.Unmarshal(jsonData, &result)
 	if err != nil {
-		panic(err)
+		t.Error(err)
 	}
 
-	for i, p := range people {
-		value, err := p.Unmarshal()
-		if err != nil {
-			t.Error(err)
-		}
+	if len(result) != 2 {
+		t.Errorf("expected 2 elements, got %d", len(result))
+	}
 
-		if i < 3 {
-			if value == nil {
-				t.Error("unexpected nil value")
-			}
-		} else {
-			if value != nil {
-				t.Error("unexpected value")
-			}
-		}
+	person1, err := result["person1"].Unmarshal()
+	if err != nil {
+		t.Error(err)
+	}
+	if person1.Name != "John" || person1.Age != 30 || person1.City != "New York" {
+		t.Error("values do not match for person1")
+	}
+
+	person2, err := result["person2"].Unmarshal()
+	if err != nil {
+		t.Error(err)
+	}
+	if person2.Name != "Jane" || person2.Age != 25 || person2.City != "Los Angeles" {
+		t.Error("values do not match for person2")
+	}
+}
+
+func TestJitJSON_UnmarshalSlice(t *testing.T) {
+	jsonData := []byte(`[
+		{"Name":"John","Age":30,"City":"New York"},
+		{"Name":"Jane","Age":25,"City":"Los Angeles"}
+	]`)
+
+	var result []jitjson.JitJSON[Person]
+	err := json.Unmarshal(jsonData, &result)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(result) != 2 {
+		t.Errorf("expected 2 elements, got %d", len(result))
+	}
+
+	person1, err := result[0].Unmarshal()
+	if err != nil {
+		t.Error(err)
+	}
+	if person1.Name != "John" || person1.Age != 30 || person1.City != "New York" {
+		t.Error("values do not match for person1")
+	}
+
+	person2, err := result[1].Unmarshal()
+	if err != nil {
+		t.Error(err)
+	}
+	if person2.Name != "Jane" || person2.Age != 25 || person2.City != "Los Angeles" {
+		t.Error("values do not match for person2")
 	}
 }

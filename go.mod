@@ -1,3 +1,3 @@
 module github.com/mcwalrus/go-jitjson
 
-go 1.21
+go 1.23
