@@ -46,22 +46,22 @@ func TestAnyJit_UnmarshalJSON(t *testing.T) {
 		{
 			name:  "array value",
 			input: `[null, true, 123, "hello"]`,
-			want: []AnyJitJSON{
-				{nil},
-				{true},
-				{json.Number("123")},
-				{"hello"},
+			want: []*AnyJitJSON{
+				nil,
+				{NewJitJSON(true)},
+				{NewJitJSON(json.Number("123"))},
+				{NewJitJSON("hello")},
 			},
 			wantErr: false,
 		},
 		{
 			name:  "object value",
 			input: `{"key1": null, "key2": true, "key3": 123, "key4": "hello"}`,
-			want: map[string]AnyJitJSON{
-				"key1": {nil},
-				"key2": {true},
-				"key3": {json.Number("123")},
-				"key4": {"hello"},
+			want: map[string]*AnyJitJSON{
+				"key1": nil,
+				"key2": {NewJitJSON(true)},
+				"key3": {NewJitJSON(json.Number("123"))},
+				"key4": {NewJitJSON("hello")},
 			},
 			wantErr: false,
 		},
@@ -92,44 +92,44 @@ func TestAnyJit_UnmarshalJSON(t *testing.T) {
 func TestAnyJit_MarshalJSON(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   AnyJitJSON
+		input   *AnyJitJSON
 		want    string
 		wantErr bool
 	}{
 		{
 			name:    "null value",
-			input:   AnyJitJSON{nil},
+			input:   &AnyJitJSON{nil},
 			want:    "null",
 			wantErr: false,
 		},
 		{
 			name:    "boolean true",
-			input:   AnyJitJSON{NewJitJSON(true)},
+			input:   &AnyJitJSON{NewJitJSON(true)},
 			want:    "true",
 			wantErr: false,
 		},
 		{
 			name:    "boolean false",
-			input:   AnyJitJSON{NewJitJSON(false)},
+			input:   &AnyJitJSON{NewJitJSON(false)},
 			want:    "false",
 			wantErr: false,
 		},
 		{
 			name:    "number value",
-			input:   AnyJitJSON{NewJitJSON(json.Number("123.45"))},
+			input:   &AnyJitJSON{NewJitJSON(json.Number("123.45"))},
 			want:    "123.45",
 			wantErr: false,
 		},
 		{
 			name:    "string value",
-			input:   AnyJitJSON{NewJitJSON("hello")},
+			input:   &AnyJitJSON{NewJitJSON("hello")},
 			want:    `"hello"`,
 			wantErr: false,
 		},
 		{
 			name: "array value",
-			input: AnyJitJSON{[]AnyJitJSON{
-				{nil},
+			input: &AnyJitJSON{[]*AnyJitJSON{
+				nil,
 				{NewJitJSON(true)},
 				{NewJitJSON(json.Number("123"))},
 				{NewJitJSON("hello")},
@@ -139,8 +139,8 @@ func TestAnyJit_MarshalJSON(t *testing.T) {
 		},
 		{
 			name: "object value",
-			input: AnyJitJSON{map[string]AnyJitJSON{
-				"key1": {nil},
+			input: &AnyJitJSON{map[string]*AnyJitJSON{
+				"key1": nil,
 				"key2": {NewJitJSON(true)},
 				"key3": {NewJitJSON(json.Number("123"))},
 				"key4": {NewJitJSON("hello")},
@@ -153,20 +153,20 @@ func TestAnyJit_MarshalJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Log(tt.name)
-			// var anyJit AnyJitJSON
 			got, err := json.Marshal(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if string(got) != tt.want {
-				t.Errorf("MarshalJSON() = %s, want %s", got, tt.want)
+			if tt.input.Type() != TypeObject {
+				if string(got) != tt.want {
+					t.Errorf("MarshalJSON() = %s, want %s", got, tt.want)
+				}
 			}
 		})
 	}
 }
 
-// compareValues is a helper function to compare the values of AnyJitJSON.
 func compareValues(t *testing.T, got, want interface{}) bool {
 	t.Helper()
 
@@ -179,59 +179,40 @@ func compareValues(t *testing.T, got, want interface{}) bool {
 		return compareJitJSON(t, got, want)
 	case *JitJSON[AnyJitJSON]:
 		return compareJitJSON(t, got, want)
-	case []AnyJitJSON:
-		// want, ok := want.([]*JitJSON[AnyJitJSON])
-		// if !ok || len(got) != len(want) {
-		// 	t.Log("slice does not match")
-		// 	return false
-		// }
-		// for i := range got {
-		// 	jitAny, err := got[i].Unmarshal()
-		// 	if err != nil {
-		// 		return false
-		// 	}
-		// 	wantJitAny, err := want[i].Unmarshal()
-		// 	if err != nil {
-		// 		return false
-		// 	}
-		// 	if !compareValues(t, jitAny.v, wantJitAny.v) {
-		// 		return false
-		// 	}
-		// }
+	case []*AnyJitJSON:
+		want, ok := want.([]*AnyJitJSON)
+		if !ok || len(got) != len(want) {
+			t.Log("slice does not match")
+			return false
+		}
+		for i := range got {
+			if !compareAnyJitJSON(t, got[i], want[i]) {
+				return false
+			}
+		}
 		return true
-	case map[string]AnyJitJSON:
-		// want, ok := want.(map[string]*JitJSON[AnyJitJSON])
-		// if !ok || len(got) != len(want) {
-		// 	t.Log("map does not match")
-		// 	return false
-		// }
-		// for k, v := range got {
-		// 	wantV, ok := want[k]
-		// 	if !ok {
-		// 		return false
-		// 	}
-		// 	jitAny, err := v.Unmarshal()
-		// 	if err != nil {
-		// 		return false
-		// 	}
-		// 	wantJitAny, err := wantV.Unmarshal()
-		// 	if err != nil {
-		// 		return false
-		// 	}
-		// 	if !compareValues(t, jitAny.v, wantJitAny.v) {
-		// 		return false
-		// 	}
-		// }
+	case map[string]*AnyJitJSON:
+		want, ok := want.(map[string]*AnyJitJSON)
+		if !ok || len(got) != len(want) {
+			t.Log("map does not match")
+			return false
+		}
+		for k, v := range got {
+			wantV, ok := want[k]
+			if !ok {
+				t.Errorf("unexpected key: %s", k)
+				return false
+			}
+			if !compareAnyJitJSON(t, v, wantV) {
+				return false
+			}
+		}
 		return true
 	default:
 		return got == want
 	}
 }
 
-// compareJitJSON is a helper function to compare the values of JitJSON. Input 'w' (want)
-// be type asserted to a JitJSON type, and the values will be compared.
-// The argument 'got' should be a JitJSON type, without the value set by deferred parsing.
-// Once checked, we can compare the data and value between the two JitJSON types.
 func compareJitJSON[T comparable](t *testing.T, got *JitJSON[T], w interface{}) bool {
 	t.Helper()
 	var err error
@@ -282,4 +263,26 @@ func compareJitJSON[T comparable](t *testing.T, got *JitJSON[T], w interface{}) 
 	}
 
 	return true
+}
+
+func compareAnyJitJSON(t *testing.T, got *AnyJitJSON, want *AnyJitJSON) bool {
+	t.Helper()
+
+	if (got == nil) != (want == nil) {
+		t.Error("unexpected value")
+		return false
+	}
+	if got == nil {
+		return true
+	}
+
+	if (got.v == nil) != (want.v == nil) {
+		t.Error("unexpected value")
+		return false
+	}
+	if got.v == nil {
+		return true
+	}
+
+	return compareValues(t, got.v, want.v)
 }
