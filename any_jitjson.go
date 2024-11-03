@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
+)
+
+var (
+	wrongTypeErr = fmt.Errorf("wrong type in AnyJitJSON")
 )
 
 var (
@@ -35,83 +40,85 @@ const (
 // Example:
 //
 //	var any jitjson.AnyJitJSON
-//	err := json.Unmarshal([]byte(`{"key": [1, "text", true]}`), &any)
+//	err := json.Unmarshal([]byte(`{"key": [1, "text", true, null]}`), &any)
 //	if err != nil {
 //		panic(err)
 //	}
 //
-//	// Get parsed value
-//	value := any.Value()
-//	fmt.Println(value) // Output: map[key:[1 text true]]
-//
-//	// Access the object value
-//	m, ok := value.(map[string]*jitjson.AnyJitJSON)
+//	// Access object
+//	m, ok := any.AsObject()
 //	if !ok {
 //		panic("not a map")
 //	}
 //
-//	// Access the array value
-//	sl, ok := m["key"].Value().([]*jitjson.AnyJitJSON)
+//	// Access array value
+//	sl, ok := m["key"].AsArray()
 //	if !ok {
 //		panic("not an array")
 //	}
 //
 //	// Access number value
-//	num := sl[0].Value().(*jitjson.JitJSON[json.Number])
-//	n, err := num.Unmarshal()
-//	if err != nil {
-//		panic(err)
+//	n, ok := sl[0].AsNumber()
+//	if !ok {
+//		panic("not a number")
 //	}
 //	fmt.Println(n.Int64()) // Output: 1 <nil>
 //
 //	// Access string value
-//	str := sl[1].Value().(*jitjson.JitJSON[string])
-//	s, err := str.Unmarshal()
-//	if err != nil {
-//		panic(err)
+//	str, ok := sl[1].AsString()
+//	if !ok {
+//		panic("not a string")
 //	}
 //	fmt.Println(s) // Output: text
 //
 //	// Access boolean value
-//	boo := sl[2].Value().(*jitjson.JitJSON[bool])
-//	b, err := boo.Unmarshal()
-//	if err != nil {
-//		panic(err)
+//	b, ok := sl[2].AsBool()
+//	if !ok {
+//		panic("not a boolean")
 //	}
 //	fmt.Println(b) // Output: true
+//
+//	// Access null value
+//	fmt.Println(sl[3].IsNull()) // Output: true
 type AnyJitJSON struct {
 	v interface{}
 }
 
-// Value returns the underlying value of AnyJitJSON which is parsed via the UnmarshalJSON
-// method. The value can be one of the following:
-//
-//	var any AnyJitJSON
-//	value := any.Value()
-//
-//	switch any.Type() {
-//	case TypeNull:
-//	    // handle nil value
-//	case TypeBool:
-//		var b = value.(*JitJSON[bool])
-//	case TypeNumber:
-//		var num = value.(*JitJSON[json.Number])
-//	case TypeString:
-//	    var str = value.(*JitJSON[string])
-//	case TypeArray:
-//	    var arr = value.([]*AnyJitJSON)
-//	case TypeObject:
-//	    var obj = value.(map[string]*AnyJitJSON)
-//	}
-//
-// These cover all possible types that can be returned from the Value method. Alternatively,
-// the Type method can be used to determine the type of the underlying value for type assertion.
-func (a *AnyJitJSON) Value() interface{} {
-	return a.v
+// NewAnyJitJSON creates a new AnyJitJSON value from the given JSON data. The method
+// unmarshals the JSON data and stores the value in AnyJitJSON. If the JSON data is
+// invalid, the method returns an error.
+func NewAnyJitJSON(data []byte) *AnyJitJSON {
+	var a = &AnyJitJSON{}
+	_ = a.UnmarshalJSON(data)
+	return a
 }
 
 // Type returns the ValueType of the current AnyJitJSON value. This method can be used
 // to determine the type of the underlying value alternatively to type assertion.
+//
+//	var any AnyJitJSON
+//	switch any.Type() {
+//	case TypeNull:
+//	    // handle nil value
+//	case TypeBool:
+//		b, _ := any.AsBool()
+//		// handle boolean value
+//	case TypeNumber:
+//		num, _ := any.AsNumber()
+//		// handle number value
+//	case TypeString:
+//	    str, _ := any.AsString()
+//		// handle string value
+//	case TypeArray:
+//	    arr, _ := any.AsArray()
+//		// handle array value
+//	case TypeObject:
+//	    obj, _ := any.AsObject()
+//		// handle object value
+//	}
+//
+// These cover all possible types that can be returned from the Value method. Alternatively,
+// the Type method can be used to determine the type of the underlying value for type assertion.
 func (a *AnyJitJSON) Type() ValueType {
 	switch a.v.(type) {
 	case nil:
@@ -128,6 +135,134 @@ func (a *AnyJitJSON) Type() ValueType {
 		return TypeObject
 	default:
 		return TypeNull
+	}
+}
+
+// IsNull returns true if the AnyJitJSON is a null value.
+func (a *AnyJitJSON) IsNull() bool {
+	return a.Type() == TypeNull
+}
+
+// AsBool returns value of AnyJitJSON as a bool if possible.
+func (a *AnyJitJSON) AsBool() (bool, bool) {
+	jit, ok := (a.v).(*JitJSON[bool])
+	if !ok {
+		return false, false
+	}
+	val, _ := jit.Decode()
+	return val, true
+}
+
+// AsNumber returns value of AnyJitJSON as a json.Number if possible.
+func (a *AnyJitJSON) AsNumber() (json.Number, bool) {
+	jit, ok := (a.v).(*JitJSON[json.Number])
+	if !ok {
+		return "", false
+	}
+	val, _ := jit.Decode()
+	return val, true
+}
+
+// AsString returns value of AnyJitJSON as a string if possible.
+func (a *AnyJitJSON) AsString() (string, bool) {
+	jit, ok := (a.v).(*JitJSON[string])
+	if !ok {
+		return "", false
+	}
+	val, _ := jit.Decode()
+	return val, true
+}
+
+// AsArray returns value of AnyJitJSON as []*AnyJitJSON if possible.
+func (a *AnyJitJSON) AsArray() ([]*AnyJitJSON, bool) {
+	arr, ok := a.v.([]*AnyJitJSON)
+	if !ok {
+		return nil, false
+	}
+	return arr, true
+}
+
+// AsObject returns value of AnyJitJSON as map[string]*AnyJitJSON if possible.
+func (a *AnyJitJSON) AsObject() (map[string]*AnyJitJSON, bool) {
+	obj, ok := a.v.(map[string]*AnyJitJSON)
+	if !ok {
+		return nil, false
+	}
+	return obj, true
+}
+
+// MarshalJSON parses the value to return the JSON encoding of the value. The method
+// will either achieves this through JitJSON cache or by marshaling the value.
+func (a *AnyJitJSON) MarshalJSON() ([]byte, error) {
+	if a == nil || a.v == nil {
+		return []byte("null"), nil
+	}
+
+	// type switches to handle each possible type
+	switch v := a.v.(type) {
+	case *JitJSON[bool]:
+		return v.Encode()
+
+	case *JitJSON[json.Number]:
+		return v.Encode()
+
+	case *JitJSON[string]:
+		return v.Encode()
+
+	case []*AnyJitJSON:
+		if len(v) == 0 {
+			return []byte("[]"), nil
+		}
+
+		var builder strings.Builder
+		builder.WriteString("[")
+
+		for i, e := range v {
+			if i > 0 {
+				builder.WriteString(",")
+			}
+			data, err := e.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			builder.Write(data)
+		}
+
+		builder.WriteString("]")
+		return []byte(builder.String()), nil
+
+	case map[string]*AnyJitJSON:
+		if len(v) == 0 {
+			return []byte("{}"), nil
+		}
+
+		var builder strings.Builder
+		builder.WriteString("{")
+
+		first := true
+		for key, value := range v {
+			if !first {
+				builder.WriteString(",")
+			}
+			first = false
+			keyData, err := json.Marshal(key)
+			if err != nil {
+				return nil, err
+			}
+			builder.Write(keyData)
+			builder.WriteString(":")
+			valueData, err := value.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			builder.Write(valueData)
+		}
+
+		builder.WriteString("}")
+		return []byte(builder.String()), nil
+
+	default:
+		return nil, fmt.Errorf("unexpected type in AnyJitJSON: %T", a.v)
 	}
 }
 
