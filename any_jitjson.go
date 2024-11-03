@@ -2,10 +2,8 @@ package jitjson
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
@@ -89,19 +87,21 @@ type AnyJitJSON struct {
 // method. The value can be one of the following:
 //
 //	var any AnyJitJSON
-//	switch v := any.Value().(type) {
-//	case nil:
-//		// handle nil value
-//	case *JitJSON[bool]:
-//		// handle boolean value
-//	case *JitJSON[json.Number]:
-//		// handle number value
-//	case *JitJSON[string]:
-//		// handle string value
-//	case []*AnyJitJSON:
-//		// handle array value
-//	case map[string]*AnyJitJSON:
-//		// handle object value
+//	value := any.Value()
+//
+//	switch any.Type() {
+//	case TypeNull:
+//	    // handle nil value
+//	case TypeBool:
+//		var b = value.(*JitJSON[bool])
+//	case TypeNumber:
+//		var num = value.(*JitJSON[json.Number])
+//	case TypeString:
+//	    var str = value.(*JitJSON[string])
+//	case TypeArray:
+//	    var arr = value.([]*AnyJitJSON)
+//	case TypeObject:
+//	    var obj = value.(map[string]*AnyJitJSON)
 //	}
 //
 // These cover all possible types that can be returned from the Value method. Alternatively,
@@ -131,95 +131,12 @@ func (a *AnyJitJSON) Type() ValueType {
 	}
 }
 
-// Read implements the io.Reader interface for json.Decoder and other readers.
-func (a *AnyJitJSON) Read(p []byte) (n int, err error) {
-	data, err := a.MarshalJSON()
-	if err != nil {
-		return 0, err
-	}
-	return copy(p, data), nil
-}
-
-// MarshalJSON parses the value to return the JSON encoding of the value. The method
-// will either achieves this through JitJSON cache or by marshaling the value.
-func (a *AnyJitJSON) MarshalJSON() ([]byte, error) {
-	if a == nil || a.v == nil {
-		return []byte("null"), nil
-	}
-
-	// type switches to handle each possible type
-	switch v := a.v.(type) {
-	case *JitJSON[bool]:
-		return v.Marshal()
-
-	case *JitJSON[json.Number]:
-		return v.Marshal()
-
-	case *JitJSON[string]:
-		return v.Marshal()
-
-	case []*AnyJitJSON:
-		if len(v) == 0 {
-			return []byte("[]"), nil
-		}
-
-		var builder strings.Builder
-		builder.WriteString("[")
-
-		for i, e := range v {
-			if i > 0 {
-				builder.WriteString(",")
-			}
-			data, err := e.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(data)
-		}
-
-		builder.WriteString("]")
-		return []byte(builder.String()), nil
-
-	case map[string]*AnyJitJSON:
-		if len(v) == 0 {
-			return []byte("{}"), nil
-		}
-
-		var builder strings.Builder
-		builder.WriteString("{")
-
-		first := true
-		for key, value := range v {
-			if !first {
-				builder.WriteString(",")
-			}
-			first = false
-			keyData, err := json.Marshal(key)
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(keyData)
-			builder.WriteString(":")
-			valueData, err := value.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(valueData)
-		}
-
-		builder.WriteString("}")
-		return []byte(builder.String()), nil
-
-	default:
-		return nil, fmt.Errorf("unexpected type in AnyJitJSON: %T", a.v)
-	}
-}
-
 // UnmarshalJSON parses the JSON data and stores the value in AnyJitJSON. The method
 // supports all valid JSON value types (null, boolean, number, string, array, object).
 // If the json is invalid, the method returns an error.
 func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	a.v = nil
+	var err error
 
 	// if the value is null
 	if nullRegex.Match(data) {
@@ -230,7 +147,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is a boolean
 	if boolRegex.Match(data) {
 		var b JitJSON[bool]
-		if err := json.Unmarshal(data, &b); err == nil {
+		if err = json.Unmarshal(data, &b); err == nil {
 			a.v = &b
 			return nil
 		}
@@ -239,7 +156,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is an number
 	if numberRegex.Match(data) {
 		var num = JitJSON[json.Number]{}
-		if err := json.Unmarshal(data, &num); err == nil {
+		if err = json.Unmarshal(data, &num); err == nil {
 			a.v = &num
 			return nil
 		}
@@ -248,7 +165,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is a string
 	if stringRegex.Match(data) {
 		var str = JitJSON[string]{}
-		if err := json.Unmarshal(data, &str); err == nil {
+		if err = json.Unmarshal(data, &str); err == nil {
 			a.v = &str
 			return nil
 		}
@@ -257,7 +174,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is an array
 	if arrayRegex.Match(data) {
 		var arr = []*AnyJitJSON{}
-		if err := json.Unmarshal(data, &arr); err == nil {
+		if err = json.Unmarshal(data, &arr); err == nil {
 			a.v = arr
 			return nil
 		}
@@ -266,11 +183,11 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is an object
 	if objectRegex.Match(data) {
 		var obj = map[string]*AnyJitJSON{}
-		if err := json.Unmarshal(data, &obj); err == nil {
+		if err = json.Unmarshal(data, &obj); err == nil {
 			a.v = obj
 			return nil
 		}
 	}
 
-	return errors.New("invalid json")
+	return fmt.Errorf("invalid json: %w", err)
 }

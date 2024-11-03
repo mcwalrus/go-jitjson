@@ -8,9 +8,9 @@ import (
 
 // JitJSON[T] provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to/from JSON is deferred until needed via Marshal and Unmarshal methods.
-// You can think of JitJSON[T] as a lazy JSON parser.
+// You can think of JitJSON[T] as a lazy two way JSON parser, with cache.
 type JitJSON[T any] struct {
-	data json.RawMessage
+	data []byte
 	val  *T
 }
 
@@ -19,20 +19,20 @@ func NewJitJSON[T any](val T) *JitJSON[T] {
 	return &JitJSON[T]{val: &val}
 }
 
-// BytesToJitJSON constructs a new JitJSON[T] from a JSON encoding.
-func BytesToJitJSON[T any](data []byte) *JitJSON[T] {
+// NewJitJSONFromBytes constructs a new JitJSON[T] from a JSON encoding for a value of type T.
+func NewJitJSONFromBytes[T any](data []byte) *JitJSON[T] {
 	return &JitJSON[T]{data: data}
 }
 
-// MarshalJSON implements json.Marshaler, simply calling the Marshal method.
+// MarshalJSON returns the JSON encoding of JitJSON[T].
 func (jit *JitJSON[T]) MarshalJSON() ([]byte, error) {
-	return jit.Marshal()
+	return jit.Encode()
 }
 
-// Marshal performs deferred marshaling of the value of JitJSON[T]. If the encoding has already been resolved,
-// the method returns the existing encoding without re-evaluating 'json.Marshal'. If the JitJSON[T] is empty,
-// the method returns nil, nil. The encoded value is cached for future use.
-func (jit *JitJSON[T]) Marshal() ([]byte, error) {
+// Encode performs deferred json marshaling of the value of JitJSON[T]. The method can return without evaluating
+// 'json.Marshal' if the value has been constructed from bytes or has already been marshaled. Once marshaled, the
+// encoded value is cached for future use. If the value of T is nil, the method returns nil, nil.
+func (jit *JitJSON[T]) Encode() ([]byte, error) {
 	if jit.data != nil {
 		return jit.data, nil
 	}
@@ -49,18 +49,17 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	return jit.data, nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler by storing the JSON encoding for deferred unmarshaling.
-// If jit has been used for previous unmarshaling, the method resets the jit for the new encoding.
+// UnmarshalJSON stores the encoding to JitJSON[T].
 func (jit *JitJSON[T]) UnmarshalJSON(data []byte) error {
 	jit.val = nil
 	jit.data = data
 	return nil
 }
 
-// Unmarshal performs deferred unmarshaling of the value of JitJSON[T]. If the value has already been resolved,
-// the method returns the existing value without re-evaluating 'json.Unmarshal'. If the JitJSON[T] is empty, the
-// zero value of type T is returned. The decoded value is cached for future use.
-func (jit *JitJSON[T]) Unmarshal() (T, error) {
+// Decode performs deferred json unmarshaling for the value of JitJSON[T]. The method can return without evaluating
+// 'json.Unmarshal' if the value is stored by the JitJSON or has already been unmarshaled. Once unmarshaled, the
+// decoded value is cached for future use. If the JitJSON[T] is empty, the zero value of type T is returned.
+func (jit *JitJSON[T]) Decode() (T, error) {
 	if jit.val != nil {
 		return *jit.val, nil
 	}
@@ -78,11 +77,8 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	return *jit.val, nil
 }
 
-// Read allows JitJSON[T] to be used with json.Decoder or other readers which use io.Reader.
-func (jit JitJSON[T]) Read(p []byte) (n int, err error) {
-	data, err := jit.Marshal()
-	if err != nil {
-		return 0, nil
-	}
-	return copy(p, data), nil
+// Set sets the value of JitJSON[T] to the provided value of T.
+func (jit *JitJSON[T]) Set(val T) {
+	jit.val = &val
+	jit.data = nil
 }
