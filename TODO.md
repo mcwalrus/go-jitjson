@@ -1,7 +1,4 @@
 
-## Go docs
-
-Go docs is hosted at: ...
 
 ## AnyJitJSON
 
@@ -25,9 +22,9 @@ func main() {
     var jit jitjson.AnyJitJSON
 
     // Support for multiple types
-    jit = jitjson.NewJitJSON[int](1)
-    jit = jitjson.NewJitJSON[float64](2.0)
-    jit = jitjson.NewJitJSON[string]("another type!")
+    jit = jitjson.New[int](1)
+    jit = jitjson.New[float64](2.0)
+    jit = jitjson.New[string]("another type!")
 
     // Resolve by json.Marshal
     data, err := json.Marshal(jit)

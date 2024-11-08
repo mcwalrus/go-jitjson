@@ -28,10 +28,10 @@ func TestNewJitJSON(t *testing.T) {
 		"City": "New York"
 	}`)
 
-	t.Run("Encode Person", func(t *testing.T) {
-		jit := jitjson.NewJitJSON(person)
+	t.Run("Marshal Person", func(t *testing.T) {
+		jit := jitjson.New(person)
 
-		data, err := jit.Encode()
+		data, err := jit.Marshal()
 		if err != nil {
 			t.Error(err)
 		}
@@ -42,9 +42,9 @@ func TestNewJitJSON(t *testing.T) {
 	})
 
 	t.Run("Decode Person", func(t *testing.T) {
-		jit := jitjson.NewJitJSONFromBytes[Person](jsonData)
+		jit := jitjson.NewFromBytes[Person](jsonData)
 
-		p1, err := jit.Decode()
+		p1, err := jit.Unmarshal()
 		if err != nil {
 			t.Error(err)
 		}
@@ -56,10 +56,10 @@ func TestNewJitJSON(t *testing.T) {
 }
 
 func TestJitJSON_Nil(t *testing.T) {
-	jit := jitjson.NewJitJSON[*int](nil)
+	jit := jitjson.New[*int](nil)
 
-	t.Run("Encode Nil", func(t *testing.T) {
-		data, err := jit.Encode()
+	t.Run("Marshal nil", func(t *testing.T) {
+		data, err := jit.Marshal()
 		if err != nil {
 			t.Error(err)
 		}
@@ -68,8 +68,8 @@ func TestJitJSON_Nil(t *testing.T) {
 		}
 	})
 
-	t.Run("Decode Nil", func(t *testing.T) {
-		val, err := jit.Decode()
+	t.Run("Decode nil", func(t *testing.T) {
+		val, err := jit.Unmarshal()
 		if err != nil {
 			t.Error(err)
 		}
@@ -95,7 +95,7 @@ func TestJitJSON_Slice(t *testing.T) {
 		t.Errorf("expected 2 elements, got %d", len(result))
 	}
 
-	person1, err := result[0].Decode()
+	person1, err := result[0].Unmarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -103,7 +103,7 @@ func TestJitJSON_Slice(t *testing.T) {
 		t.Error("values do not match for person1")
 	}
 
-	person2, err := result[1].Decode()
+	person2, err := result[1].Unmarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -128,7 +128,7 @@ func TestJitJSON_Map(t *testing.T) {
 		t.Errorf("expected 2 elements, got %d", len(result))
 	}
 
-	person1, err := result["person1"].Decode()
+	person1, err := result["person1"].Unmarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -136,7 +136,7 @@ func TestJitJSON_Map(t *testing.T) {
 		t.Error("values do not match for person1")
 	}
 
-	person2, err := result["person2"].Decode()
+	person2, err := result["person2"].Unmarshal()
 	if err != nil {
 		t.Error(err)
 	}

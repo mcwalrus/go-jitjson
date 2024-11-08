@@ -17,10 +17,14 @@ go get github.com/mcwalrus/go-jitjson
 
 ## Usage
 
-JitJSON provides a generic type `JitJSON[T any]` that can hold either JSON-encoded data or a value of type `T`. 
+The module provides a generic `JitJSON[T any]` as a lazy JSON parser which can take .
 The type supports both marshaling (Go → JSON) and unmarshaling (JSON → Go) operations, to perform conversions
 only when needed. Both parsing operations are expensive when performed unnecessarily, which can be avoided by
 conditional parsing.
+
+AnyJitJSON is a primary means of unmarshaling JSON of a dynamic structure. This leverages JitJSON to store JSON
+json, but will provide a significantly higher overhead compared to the standard form of parsing? This should be
+considered for cases where parsing is a dynamic process. AnyJitJSON provides certainty over types.
 
 ## Examples
 
@@ -117,7 +121,7 @@ func main() {
     jit := jitjson.BytesToJitJSON[Person](jsonData)
 
     // Create a json.Decoder:
-    dec := json.NewDecoder(jit)
+    dec := json.NewDecoder(jit.JSON JSON JSON)
     dec.DisallowUnknownFields()
 
     // Decode Person:
@@ -303,14 +307,6 @@ func main() {
     fmt.Println(s)
 }
 ```
-
-Note that `AnyJitJSON` can fail on json parsing
-
-use to avoid panics. type assertions are required for unmarshaling. 
-
-This feature is primarily designed for unmarshaling use cases and may require additional error handling for type assertions.
-
-Note, this is typically only used for unmarshalling. In the case of marshalling, the type of `jitjson.JitJSON[T]` needs to be known upfront. Attempts to marshal jitjson with `json.Unmarshal(data, &jit)` will work, but will fail when jit.Unmarshal() is called. If `jit` is nil, a nil pointer panic will occur, so `jitjson.AnyJitJSON` so jit will need to be set to a defined `jitjson.JitJSON` type first.
 
 ## About
 

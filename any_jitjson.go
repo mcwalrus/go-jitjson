@@ -149,7 +149,7 @@ func (a *AnyJitJSON) AsBool() (bool, bool) {
 	if !ok {
 		return false, false
 	}
-	val, _ := jit.Decode()
+	val, _ := jit.Unmarshal()
 	return val, true
 }
 
@@ -159,17 +159,18 @@ func (a *AnyJitJSON) AsNumber() (json.Number, bool) {
 	if !ok {
 		return "", false
 	}
-	val, _ := jit.Decode()
+	val, _ := jit.Unmarshal()
 	return val, true
 }
 
+// TODO: AsString isn't working as expected. It removes the quotations unexpectedly from the string.
 // AsString returns value of AnyJitJSON as a string if possible.
 func (a *AnyJitJSON) AsString() (string, bool) {
 	jit, ok := (a.v).(*JitJSON[string])
 	if !ok {
 		return "", false
 	}
-	val, _ := jit.Decode()
+	val, _ := jit.Unmarshal()
 	return val, true
 }
 
@@ -201,13 +202,13 @@ func (a *AnyJitJSON) MarshalJSON() ([]byte, error) {
 	// type switches to handle each possible type
 	switch v := a.v.(type) {
 	case *JitJSON[bool]:
-		return v.Encode()
+		return v.Marshal()
 
 	case *JitJSON[json.Number]:
-		return v.Encode()
+		return v.Marshal()
 
 	case *JitJSON[string]:
-		return v.Encode()
+		return v.Marshal()
 
 	case []*AnyJitJSON:
 		if len(v) == 0 {
