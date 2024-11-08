@@ -1,5 +1,23 @@
 
 
+# TODO
+
+My code is a prime case for testing with fuzzy matchers.
+
+Go find me a fuzzy matcher for Go.
+
+
+## Benchmarks
+
+Could you provide a set of benchmarks focused on presenting the performance on:
+
+* When only a few elements / object fields are to be parsed from large json files.
+
+* Overhead of the worst case when parsed from large json files.
+
+* Benchmarking described in a dynamic example of using AnyJitJSON. Use a switch statement to process different types.
+
+
 ## AnyJitJSON
 
 I need to think about the design of AnyJitJSON.
@@ -44,13 +62,3 @@ func main() {
     fmt.Println(s)
 }
 ```
-
-## Benchmarks
-
-Could you provide a set of benchmarks focused on presenting the performance on:
-
-* When only a few elements / object fields are to be parsed from large json files.
-
-* Overhead of the worst case when parsed from large json files.
-
-* Benchmarking described in a dynamic example of using AnyJitJSON. Use a switch statement to process different types.

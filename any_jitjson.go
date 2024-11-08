@@ -4,20 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
-	wrongTypeErr = fmt.Errorf("wrong type in AnyJitJSON")
-)
-
-var (
-	nullRegex   = regexp.MustCompile(`^\s*(null)\s*$`)
+	nullRegex   = regexp.MustCompile(`^\s*null\s*$`)
+	arrayRegex  = regexp.MustCompile(`^\s*\[\s*(.|\n)*\]\s*$`)
+	objectRegex = regexp.MustCompile(`^\s*\{\s*(.|\n)*\}\s*$`)
 	boolRegex   = regexp.MustCompile(`^\s*(true|false)\s*$`)
 	numberRegex = regexp.MustCompile(`^\s*-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?\s*$`)
 	stringRegex = regexp.MustCompile(`^\s*"(\\.|[^"\\])*"\s*$`)
-	arrayRegex  = regexp.MustCompile(`^\s*\[.*\]\s*$`)
-	objectRegex = regexp.MustCompile(`^\s*\{.*\}\s*$`)
 )
 
 // ValueType represents the type of JSON value stored in AnyJitJSON.
@@ -30,6 +25,7 @@ const (
 	TypeString
 	TypeArray
 	TypeObject
+	TypeInvalid
 )
 
 // AnyJitJSON provides a type for handling arbitrary JSON values with just-in-time parsing.
@@ -81,7 +77,8 @@ const (
 //	// Access null value
 //	fmt.Println(sl[3].IsNull()) // Output: true
 type AnyJitJSON struct {
-	v interface{}
+	v    interface{}
+	data []byte
 }
 
 // NewAnyJitJSON creates a new AnyJitJSON value from the given JSON data. The method
@@ -129,12 +126,12 @@ func (a *AnyJitJSON) Type() ValueType {
 		return TypeNumber
 	case *JitJSON[string]:
 		return TypeString
-	case []AnyJitJSON:
+	case []*AnyJitJSON:
 		return TypeArray
-	case map[string]AnyJitJSON:
+	case map[string]*AnyJitJSON:
 		return TypeObject
 	default:
-		return TypeNull
+		return TypeInvalid
 	}
 }
 
@@ -176,19 +173,37 @@ func (a *AnyJitJSON) AsString() (string, bool) {
 
 // AsArray returns value of AnyJitJSON as []*AnyJitJSON if possible.
 func (a *AnyJitJSON) AsArray() ([]*AnyJitJSON, bool) {
-	arr, ok := a.v.([]*AnyJitJSON)
-	if !ok {
+	if arr, ok := a.v.([]*AnyJitJSON); ok {
+		return arr, true
+	}
+	if a.data == nil {
 		return nil, false
 	}
+
+	var arr []*AnyJitJSON
+	if err := json.Unmarshal(a.data, &arr); err != nil {
+		return nil, false
+	}
+	a.v = arr
+	a.data = nil
 	return arr, true
 }
 
 // AsObject returns value of AnyJitJSON as map[string]*AnyJitJSON if possible.
 func (a *AnyJitJSON) AsObject() (map[string]*AnyJitJSON, bool) {
-	obj, ok := a.v.(map[string]*AnyJitJSON)
-	if !ok {
+	if obj, ok := a.v.(map[string]*AnyJitJSON); ok {
+		return obj, true
+	}
+	if a.data == nil {
 		return nil, false
 	}
+
+	var obj map[string]*AnyJitJSON
+	if err := json.Unmarshal(a.data, &obj); err != nil {
+		return nil, false
+	}
+	a.v = obj
+	a.data = nil
 	return obj, true
 }
 
@@ -198,70 +213,21 @@ func (a *AnyJitJSON) MarshalJSON() ([]byte, error) {
 	if a == nil || a.v == nil {
 		return []byte("null"), nil
 	}
+	if a.data != nil {
+		return a.data, nil
+	}
 
-	// type switches to handle each possible type
 	switch v := a.v.(type) {
 	case *JitJSON[bool]:
 		return v.Marshal()
-
 	case *JitJSON[json.Number]:
 		return v.Marshal()
-
 	case *JitJSON[string]:
 		return v.Marshal()
-
 	case []*AnyJitJSON:
-		if len(v) == 0 {
-			return []byte("[]"), nil
-		}
-
-		var builder strings.Builder
-		builder.WriteString("[")
-
-		for i, e := range v {
-			if i > 0 {
-				builder.WriteString(",")
-			}
-			data, err := e.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(data)
-		}
-
-		builder.WriteString("]")
-		return []byte(builder.String()), nil
-
+		return json.Marshal(v)
 	case map[string]*AnyJitJSON:
-		if len(v) == 0 {
-			return []byte("{}"), nil
-		}
-
-		var builder strings.Builder
-		builder.WriteString("{")
-
-		first := true
-		for key, value := range v {
-			if !first {
-				builder.WriteString(",")
-			}
-			first = false
-			keyData, err := json.Marshal(key)
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(keyData)
-			builder.WriteString(":")
-			valueData, err := value.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			builder.Write(valueData)
-		}
-
-		builder.WriteString("}")
-		return []byte(builder.String()), nil
-
+		return json.Marshal(v)
 	default:
 		return nil, fmt.Errorf("unexpected type in AnyJitJSON: %T", a.v)
 	}
@@ -272,6 +238,7 @@ func (a *AnyJitJSON) MarshalJSON() ([]byte, error) {
 // If the json is invalid, the method returns an error.
 func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	a.v = nil
+	a.data = nil
 	var err error
 
 	// if the value is null
@@ -309,20 +276,18 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 
 	// if the value is an array
 	if arrayRegex.Match(data) {
-		var arr = []*AnyJitJSON{}
-		if err = json.Unmarshal(data, &arr); err == nil {
-			a.v = arr
-			return nil
-		}
+		a.v = []*AnyJitJSON{}
+		a.data = make([]byte, len(data))
+		copy(a.data, data)
+		return nil
 	}
 
 	// if the value is an object
 	if objectRegex.Match(data) {
-		var obj = map[string]*AnyJitJSON{}
-		if err = json.Unmarshal(data, &obj); err == nil {
-			a.v = obj
-			return nil
-		}
+		a.v = map[string]*AnyJitJSON{}
+		a.data = make([]byte, len(data))
+		copy(a.data, data)
+		return nil
 	}
 
 	return fmt.Errorf("invalid json: %w", err)
