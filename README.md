@@ -2,12 +2,13 @@
 
 `go-jitjson` is a Go library that provides just-in-time (JIT) JSON to allow defered marshaling and unmarshaling until if, or when the data is actually needed.
 
-## Highlights
+## Key Features
 
-- 🚀 Improved performance for JSON datasets by avoiding unnecessary parsing
-- 💾 Reduced memory usage when working with multiple JSON objects
+- 🚀 Improve performance for JSON datasets by avoiding unnecessary parsing
+- 💾 Reduce memory usage when working with multiple JSON objects
 - 🔄 Seamless integration with existing Go JSON interfaces
-- 🏃‍♂️ Improved handling of streaming JSON data
+- 🏃‍♂️ Improve handling of streaming JSON data
+- 🧩 Dynamic type parsing of JSON
 
 ## Installation
 
@@ -22,7 +23,7 @@ The type supports both marshaling (Go → JSON) and unmarshaling (JSON → Go) o
 only when needed. Both parsing operations are expensive when performed unnecessarily, which can be avoided by
 conditional parsing.
 
-AnyJitJSON is a primary means of unmarshaling JSON of a dynamic structure. This leverages JitJSON to store JSON
+`AnyJitJSON` is a primary means of unmarshaling JSON of a dynamic structure. This leverages JitJSON to store JSON
 json, but will provide a significantly higher overhead compared to the standard form of parsing? This should be
 considered for cases where parsing is a dynamic process. AnyJitJSON provides certainty over types.
 

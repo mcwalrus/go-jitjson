@@ -27,7 +27,6 @@ const (
 	TypeString
 	TypeArray
 	TypeObject
-	// Impossible type. Please report if you encounter this type.
 	TypeInvalid
 )
 
