@@ -15,7 +15,9 @@ var (
 	stringRegex = regexp.MustCompile(`^\s*"(\\.|[^"\\])*"\s*$`)
 )
 
-// ValueType represents the type of JSON value stored in AnyJitJSON.
+// ValueType represents the JSON type of the value stored in AnyJitJSON.
+// This type is used to determine the type of the value without performing the
+// unmarshalling operation.
 type ValueType int
 
 const (
@@ -25,13 +27,27 @@ const (
 	TypeString
 	TypeArray
 	TypeObject
+	// Impossible type. Please report if you encounter this type.
 	TypeInvalid
 )
 
-// AnyJitJSON provides a type for handling arbitrary JSON values with just-in-time parsing.
-// It can unmarshal and store any valid JSON value type (null, boolean, number, string, array,
-// or object) and defers parsing of JSON values until needed. The result of unmarshaling can
-// be accessed via the Value method.
+func (v ValueType) String() string {
+	return []string{
+		"TypeNull",
+		"TypeBool",
+		"TypeNumber",
+		"TypeString",
+		"TypeArray",
+		"TypeObject",
+		"TypeInvalid",
+	}[v]
+}
+
+// AnyJitJSON can unmarshal arbitrary JSON encodings with just-in-time parsing.
+// The value of the encoding can be accessed programmatically by using the methods
+// AsBool, AsNumber, AsString, AsArray, and AsObject. // It stores the raw data and
+// only unmarshals them when specific values are requested, making it memory efficient
+// for large JSON structures where only parts need to be accessed.
 //
 // Example:
 //
@@ -115,9 +131,10 @@ func NewAny(data []byte) (*AnyJitJSON, error) {
 //		panic("invalid type")
 //	}
 func (a *AnyJitJSON) Type() ValueType {
-	switch a.val.(type) {
-	case nil:
+	if a == nil || a.val == nil {
 		return TypeNull
+	}
+	switch a.val.(type) {
 	case *JitJSON[bool]:
 		return TypeBool
 	case *JitJSON[json.Number]:
@@ -174,10 +191,10 @@ func (a *AnyJitJSON) AsString() (string, bool) {
 // AsArray returns a []*AnyJitJSON from AnyJitJSON if possible.
 // This method will return false if the value is not an array.
 func (a *AnyJitJSON) AsArray() ([]*AnyJitJSON, bool) {
-	if arr, ok := a.val.([]*AnyJitJSON); ok {
-		return arr, true
-	}
 	if a.data == nil {
+		return nil, false
+	}
+	if _, ok := a.val.([]*AnyJitJSON); !ok {
 		return nil, false
 	}
 
@@ -193,10 +210,10 @@ func (a *AnyJitJSON) AsArray() ([]*AnyJitJSON, bool) {
 // AsObject returns a map[string]*AnyJitJSON from AnyJitJSON if possible.
 // This method will return false if the value is not an object.
 func (a *AnyJitJSON) AsObject() (map[string]*AnyJitJSON, bool) {
-	if obj, ok := a.val.(map[string]*AnyJitJSON); ok {
-		return obj, true
-	}
 	if a.data == nil {
+		return nil, false
+	}
+	if _, ok := a.val.(map[string]*AnyJitJSON); !ok {
 		return nil, false
 	}
 
