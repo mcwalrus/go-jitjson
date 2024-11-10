@@ -1,10 +1,10 @@
 input = """
-BenchmarkPartialParse/JitJSON/Small-12         	   24825	     42233 ns/op	    4088 B/op	     108 allocs/op
-BenchmarkPartialParse/Stdlib/Small-12          	   26164	     42821 ns/op	    6888 B/op	     143 allocs/op
-BenchmarkPartialParse/JitJSON/Medium-12        	    3014	    385069 ns/op	   38552 B/op	    1029 allocs/op
-BenchmarkPartialParse/Stdlib/Medium-12         	    2988	    408855 ns/op	   62952 B/op	    1406 allocs/op
-BenchmarkPartialParse/JitJSON/Large-12         	     306	   3853306 ns/op	  379372 B/op	   10212 allocs/op
-BenchmarkPartialParse/Stdlib/Large-12          	     295	   4090471 ns/op	  564204 B/op	   14009 allocs/op
+BenchmarkNestedParseWorstCase/JitJSON/Small-12         	   35372	     34224 ns/op	    4696 B/op	     121 allocs/op
+BenchmarkNestedParseWorstCase/Stdlib/Small-12          	  119982	     10292 ns/op	    1568 B/op	      40 allocs/op
+BenchmarkNestedParseWorstCase/JitJSON/Medium-12        	     645	   1854512 ns/op	  147912 B/op	    1392 allocs/op
+BenchmarkNestedParseWorstCase/Stdlib/Medium-12         	   15350	     76064 ns/op	   10928 B/op	     226 allocs/op
+BenchmarkNestedParseWorstCase/JitJSON/Large-12         	       6	 170335688 ns/op	11966714 B/op	   17152 allocs/op
+BenchmarkNestedParseWorstCase/Stdlib/Large-12          	    1497	    770239 ns/op	  100816 B/op	    2033 allocs/op
 """
 
 def parse_benchmark_input(input_str):

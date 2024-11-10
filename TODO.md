@@ -3,6 +3,11 @@ Benchmark results
 
 Worst case is 70% more allocations with 60% slower performance. Bytes used scale linearly at 10% per order of magnitude.
 
+The breakpoint on performance ns/op for parsing arrays is around 40% of the data being parsed. This scales linearly but is dependent on the size of the data.
+
+The examples
+
+
 
 
 Worst case:

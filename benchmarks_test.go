@@ -15,7 +15,7 @@ type Object struct {
 	Number float64       `json:"number"`
 	String string        `json:"string"`
 	Slice  []interface{} `json:"slice"`
-	Object *NestedObject `json:"object"` // type below
+	Object *NestedObject `json:"object"`
 }
 
 type NestedObject struct {
@@ -313,6 +313,183 @@ var (
 	mediumNestedObjects = generateNestedObjects(100)
 	largeNestedObjects  = generateNestedObjects(1000)
 )
+
+type JitObject struct {
+	Nil    interface{}                        `json:"nil"`
+	Bool   bool                               `json:"bool"`
+	Number float64                            `json:"number"`
+	String string                             `json:"string"`
+	Slice  []interface{}                      `json:"slice"`
+	Object *jitjson.JitJSON[*JitNestedObject] `json:"object"` // marshalled as a pointer
+}
+
+type JitNestedObject struct {
+	String string                             `json:"nestedString"`
+	Number int                                `json:"nestedNumber"`
+	Object *jitjson.JitJSON[*JitNestedObject] `json:"nestedObject"` // recursive
+}
+
+// Benchmark 2: Nested object parsing comparison
+func BenchmarkNestedParse(b *testing.B) {
+	b.Run("JitJSON/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(smallNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("Stdlib/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(smallNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("JitJSON/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(mediumNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("Stdlib/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(mediumNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("JitJSON/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(largeNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("Stdlib/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(largeNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+// Implement with percentage iterator. If The percentage is 100% then we are doing the worst case. 0% is best case.
+func BenchmarkNestedParseWorstCase(b *testing.B) {
+	b.Run("JitJSON/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(smallNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Unmarshal all nested objects recursively
+			nested, err := obj.Object.Unmarshal()
+			if err != nil {
+				b.Fatal(err)
+			}
+			for nested != nil && nested.Object != nil {
+				nested, err = nested.Object.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("Stdlib/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(smallNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("JitJSON/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(mediumNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Unmarshal all nested objects recursively
+			nested, err := obj.Object.Unmarshal()
+			if err != nil {
+				b.Fatal(err)
+			}
+			for nested != nil && nested.Object != nil {
+				nested, err = nested.Object.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("Stdlib/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(mediumNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("JitJSON/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj JitObject
+			err := json.Unmarshal(largeNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// Unmarshal all nested objects recursively
+			nested, err := obj.Object.Unmarshal()
+			if err != nil {
+				b.Fatal(err)
+			}
+			for nested != nil && nested.Object != nil {
+				nested, err = nested.Object.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("Stdlib/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var obj Object
+			err := json.Unmarshal(largeNestedObjects, &obj)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
 
 // type Animal string
 
