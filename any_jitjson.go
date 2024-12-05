@@ -1,6 +1,7 @@
 package jitjson
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -101,6 +102,15 @@ func NewAny(data []byte) (*AnyJitJSON, error) {
 	var a = &AnyJitJSON{}
 	err := a.UnmarshalJSON(data)
 	return a, err
+}
+
+func (a *AnyJitJSON) String() string {
+	var prettyJSON bytes.Buffer
+	err := json.Indent(&prettyJSON, a.data, "", "  ")
+	if err != nil {
+		return string(a.data)
+	}
+	return prettyJSON.String()
 }
 
 // Type returns the ValueType of the current AnyJitJSON value. This method can be used

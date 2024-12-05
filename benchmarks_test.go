@@ -83,16 +83,17 @@ func shouldParseIterator(parsePercent float64) func() bool {
 	}
 }
 
-// BenchmarkParsePercent benchmarks the parsing of JSON data with a given percentage of objects
+// BenchmarkParsePercentage benchmarks the parsing of JSON data with a given percentage of objects
 // that are parsed. It compares the performance of JitJSON and the standard library.
-func BenchmarkParsePercent(b *testing.B) {
-	parsePercent, err := strconv.ParseFloat(os.Getenv("JITJSON_PARSE_PERCENT"), 64)
+func BenchmarkParsePercentage(b *testing.B) {
+	parsePercent, err := strconv.ParseFloat(os.Getenv("PARSE_PERCENTAGE"), 64)
 	if err != nil {
-		b.Fatal(err)
+		b.Log("PARSE_PERCENTAGE not set, defaulting to 0.3")
+		parsePercent = 0.3
 	}
 
 	if parsePercent < 0 || parsePercent > 1 {
-		b.Fatal("JITJSON_PARSE_PERCENT must be between 0 and 1")
+		b.Fatal("PARSE_PERCENTAGE must be between 0 and 1")
 	}
 
 	b.Run("JitJSON/Small", func(b *testing.B) {
@@ -237,8 +238,8 @@ func buildNestedObject(depth int) *Object {
 
 var (
 	smallNestedObjects  = generateNestedObjects(10)
-	mediumNestedObjects = generateNestedObjects(1000)
-	largeNestedObjects  = generateNestedObjects(100000)
+	mediumNestedObjects = generateNestedObjects(100)
+	largeNestedObjects  = generateNestedObjects(1000)
 )
 
 // JitObject is a struct that is used to test the nested object parsing.

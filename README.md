@@ -16,20 +16,15 @@
 go get github.com/mcwalrus/go-jitjson
 ```
 
-## Usage
+## When to use JitJSON?
 
-The module provides a generic `JitJSON[T any]` as a lazy JSON parser which can take .
-The type supports both marshaling (Go → JSON) and unmarshaling (JSON → Go) operations, to perform conversions
-only when needed. Both parsing operations are expensive when performed unnecessarily, which can be avoided by
-conditional parsing.
+Use JitJSON when you have a JSON dataset that is large or complex, and you want to avoid parsing the entire dataset when only a small portion of the data is needed. The most significant benefit of using JitJSON is from the reduction of memory allocations, and in relation the number of GC cycles required, which will be significant when working with large datasets or real-time / monolithic applications. If you intend to parse all data of a JSON dataset, then JitJSON will not provide any benefit.
 
-`AnyJitJSON` is a primary means of unmarshaling JSON of a dynamic structure. This leverages JitJSON to store JSON
-json, but will provide a significantly higher overhead compared to the standard form of parsing? This should be
-considered for cases where parsing is a dynamic process. AnyJitJSON provides certainty over types.
+## Quick Start
 
-## Examples
+### Marshaling
 
-### Encoding with JitJSON:
+Use the `New` method to create a `JitJSON` from a value of any type.
 
 ```Go
 package main
@@ -46,17 +41,14 @@ type Person struct {
 }
 
 func main() {
-
-    var value = Person{
+    // Create new JitJSON:
+    jit := jitjson.New(Person{
         Name: "John",
         Age:  30,
         City: "New York",
-    }
+    })
 
-    // Create JitJSON:
-    jit := jitjson.NewJitJSON[Person](value)
-
-    // Just-in-time encoding:
+    // Marshal value just-in-time:
     jsonEncoding, err := jit.Marshal()
     if err != nil {
         panic(err)
@@ -66,7 +58,9 @@ func main() {
 }
 ```
 
-### Decoding with JitJSON:
+### Unmarshaling
+
+Use the `NewFromBytes` method to create a `JitJSON` from a JSON encoded string.
 
 ```Go
 package main
@@ -83,12 +77,14 @@ type Person struct {
 }
 
 func main() {
-    jsonEncoding := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
-    
-    // Create JitJSON:
-    jit := jitjson.NewJitJSON[Person](jsonEncoding)
-    
-    // Just-in-time decoding:
+    // Create new JitJSON:
+    jit := jitjson.NewFromBytes[Person]([]byte(`{
+        "Name": "John",
+        "Age": 30,
+        "City": "New York"
+    }`))
+
+    // Unmarshal value just-in-time:
     value, err := jit.Unmarshal()
     if err != nil {
         panic(err)
@@ -98,9 +94,52 @@ func main() {
 }
 ```
 
-Benefit: `jitjson.JitJSON[T]` provides `json.Marshaller` and `json.Unmarshaller` interface methods to allow easy replacement of the standard library where appropriate.
+### Updating Values
 
-### Custom json.Decoder:
+Use the `Set` method to update the value of a `JitJSON`.
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+func main() {
+    // Create new JitJSON:
+    jit := jitjson.New(Person{
+        Name: "John",
+        Age:  30,
+        City: "New York",
+    })
+
+    // Marshal the initial value:
+    jsonEncoding, err := jit.Marshal()
+    if err != nil {
+        panic(err)
+    }
+
+    // Update the value:
+    jit.Set(Person{
+        Name: "Jane",
+        Age:  25,
+        City: "Los Angeles",
+    })
+
+    // Marshal the updated value:
+    jsonEncoding, err = jit.Marshal()
+    if err != nil {
+        panic(err)
+    }
+
+    fmt.Println(string(jsonEncoding)) // Output: {"age":25,"city":"Los Angeles","name":"Jane"}
+}
+```
+
+### Parsing Multiple Times
+
+Values can be parsed multiple times, which doesn't come with any performance penalty.
 
 ```Go
 package main
@@ -117,26 +156,45 @@ type Person struct {
 }
 
 func main() {
-    jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
+    jit := jitjson.New(Person{
+        Name: "John",
+        Age:  30,   
+        City: "New York",
+    })
 
-    jit := jitjson.BytesToJitJSON[Person](jsonData)
-
-    // Create a json.Decoder:
-    dec := json.NewDecoder(jit.JSON JSON JSON)
-    dec.DisallowUnknownFields()
-
-    // Decode Person:
-    var p Person
-    err := dec.Decode(&p)
+    _, err := jit.Marshal() // Initial Marshal
     if err != nil {
         panic(err)
     }
+    for i := 0; i < 10; i++ {
+        _, err = jit.Marshal() // No new allocations
+        if err != nil {
+            panic(err)
+        }
+    }
+◊
+    jit = jitjson.NewFromBytes([]byte(`{
+        "name": "John",
+        "age": 30,
+        "city": "New York"
+    }`))
 
-    fmt.Println(p) // Output: {John 30 New York}
+    _, err = jit.Unmarshal() // Initial Unmarshal
+    if err != nil {
+        panic(err)
+    }
+    for i := 0; i < 10; i++ {
+        _, err = jit.Unmarshal() // No new allocations
+        if err != nil {
+            panic(err)
+        }
+    }
 }
 ```
 
-### Unmarshalling a slice:
+### Advanced Usage
+
+#### Using Slices
 
 ```Go
 package main
@@ -155,18 +213,19 @@ type Person struct {
 func main() {
     jsonArray := []byte(`[
         {"Name":"John","Age":30,"City":"New York"},
-        {"Name":"Jane","Age":25,"City":"Los Angeles"}
+        {"Name":"Jane","Age":25,"City":"Los Angeles"},
+        {"Name":"Jim","Age":35,"City":"Chicago"}
     ]`)
 
-    // A JitJSON slice of People:
-    var jitSlice []jitjson.JitJSON[Person]
-    err := json.Unmarshal(jsonArray, &jitSlice)
+    // Unmarshal slice
+    var jit []*jitjson.JitJSON[Person]
+    err := json.Unmarshal(jsonArray, &jit)
     if err != nil {
         panic(err)
     }
 
-    // Unmarshal only the first index:
-    jit, err = jitSlice[0].Unmarshal()
+    // Unmarshal the first person just-in-time
+    value, err := jit[0].Unmarshal()
     if err != nil {
         panic(err)
     }
@@ -175,14 +234,13 @@ func main() {
 }
 ```
 
-### Unmarshalling a map:
+#### Using Maps
 
 ```Go
 package main
 
 import (
     "fmt"
-    "github.com/google/uuid"
     "github.com/mcwalrus/go-jitjson"
 )
 
@@ -194,32 +252,35 @@ type Person struct {
 
 func main() {
     jsonMap := []byte(`{
-        "550e8400-e29b-41d4-a716-446655440000": {"Name":"John","Age":30,"City":"New York"},
-        "550e8400-e29b-41d4-a716-446655440001": {"Name":"Jane","Age":25,"City":"Los Angeles"}
+        1: {"Name":"John","Age":30,"City":"New York"},
+        2: {"Name":"Jane","Age":25,"City":"Los Angeles"},
+        3: {"Name":"Jim","Age":35,"City":"Chicago"}
     }`)
 
-    // A JitJSON map of UUIDs to People:
-    var jitMap map[uuid.UUID]jitjson.JitJSON[Person]
+    // Unmarshal map
+    var jitMap map[int]*jitjson.JitJSON[Person]
     err := json.Unmarshal(jsonMap, &jitMap)
     if err != nil {
         panic(err)
     }
 
-
-    jit, ok := jitMap["550e8400-e29b-41d4-a716-446655440000"]
+    // Select a person
+    jit, ok := jitMap[1]
     if !ok {
         panic("missing person")
     }
+
+    // Unmarshal only person one just-in-time
     person, err := jit.Unmarshal()
     if err != nil {
         panic(err)
     }
-    
+
     fmt.Println(person) // Output: {John 30 New York}
 }
 ```
 
-### Unmarshalling nested structures
+#### Nested Fields
 
 ```Go
 package main
@@ -238,7 +299,7 @@ type Address struct {
 type Person struct {
     Name    string
     Age     int
-    Address jitjson.JitJSON[Address]    
+    Address *jitjson.JitJSON[Address]    
 }
 
 func main() {
@@ -252,15 +313,14 @@ func main() {
         }
     }`)
 
-    jit := jitjson.NewJitJSON[Person](jsonData)
-
-    // Decode person
-    person, err := jit.Unmarshal()
+    // Unmarshal person
+    var person Person
+    err := json.Unmarshal(jsonData, &person)
     if err != nil {
         panic(err)
     }
 
-    // Decode the address
+    // Unmarshal person's address just-in-time
     address, err := person.Address.Unmarshal()
     if err != nil {
         panic(err)
@@ -270,9 +330,79 @@ func main() {
 }
 ```
 
-### Dynamic Type Parsing
+### AnyJitJSON
 
-To handle dynamic parsing of JSON, we can use `AnyJitJSON` to optionally set `NewJitJSON[T]` types.
+#### Basic Usage
+
+Dynamic type inference of `AnyJitJSON`.
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+type Person struct {
+    Name    string
+    Age     int
+    Friends []Person
+}
+
+func main() {
+    jsonData := []byte(`{
+        "Name": "John",
+        "Age": 30,
+        "Friends": [
+            {"Name": "Jane", "Age": 25},
+            {"Name": "Jim", "Age": 35},
+            {"Name": "Jill", "Age": 45}
+        ]
+    }`)
+
+    // Support for multiple types
+    var jit jitjson.AnyJitJSON
+    err := json.Unmarshal(jsonData, &jit)
+    if err != nil {
+        panic(err)
+    }
+
+    // Get the object
+    obj, ok := jit.AsObject()
+    if !ok {
+        panic("not object")
+    }
+
+    // Get the name
+    if name, ok := obj["Name"].AsString(); ok {
+        fmt.Println(name)
+    }
+
+    // Get the friends
+    if friends, ok := obj["Friends"].AsArray(); ok {
+        for _, friend := range friends {
+            fmt.Println(friend)
+        }
+
+        data, err := friends[0].Marshal()
+        if err != nil {
+            panic(err)
+        }
+
+        // Unmarshal the friend just-in-time
+        var person Person
+        err = json.Unmarshal(data, &person)
+        if err != nil {
+            panic(err)
+        }
+    }
+}
+```
+
+#### With Arrays
+
+Dynamic type inference of `AnyJitJSON` with arrays.
 
 ```Go
 package main
@@ -283,31 +413,99 @@ import (
 )
 
 func main() {
-    var jit jitjson.AnyJitJSON
+    jsonData := []byte(`[
+        1.23,
+        "Hello, world!",
+        {"Name": "John", "Age": 30},
+        true
+    ]`)
 
     // Support for multiple types
-    jit = jitjson.NewJitJSON[int](1)
-    jit = jitjson.NewJitJSON[float64](2.0)
-    jit = jitjson.NewJitJSON[string]("another type!")
-
-    // Resolve by json.Marshal
-    data, err := json.Marshal(jit)
+    var jit []*jitjson.AnyJitJSON
+    err := json.Unmarshal(jsonData, &jit)
     if err != nil {
         panic(err)
     }
 
-    // Unmarshal by type inference
-    v := (jit).(jitjson.JitJSON[string])
-    s, err := v.Unmarshal()
-    if err != nil {
-        panic(err)
+    num, ok := jit[0].AsNumber()
+    if !ok {
+        panic("not a number")
     }
+    fmt.Println(num) // Output: 1.23
 
-    // Output: another type!
-    fmt.Println(string(data))
-    fmt.Println(s)
+    str, ok := jit[1].AsString()
+    if !ok {
+        panic("not a string")
+    }
+    fmt.Println(str) // Output: Hello, world!
+
+    if jit[2].Type() != jitjson.Object {
+        panic("not an object")
+    }
+    fmt.Println(jit[2]) // Output: {"Name": "John", "Age": 30}
+
+    if jit[3].Type() != jitjson.Boolean {
+        panic("not a boolean")
+    }
+    fmt.Println(jit[3]) // Output: true
 }
 ```
+
+#### Conditional Types
+
+Dynamic type inference of `AnyJitJSON` across multiple possible types.
+
+```Go
+package main
+
+import (
+    "fmt"
+    "github.com/mcwalrus/go-jitjson"
+)
+
+func whichType(data []byte) {
+    var jit *jitjson.AnyJitJSON
+    err := json.Unmarshal(data, &jit)
+    if err != nil {
+        panic(err)
+    }
+    switch typ := jit.Type(); typ {
+    case jitjson.Null:
+        fmt.Println("null")
+    case jitjson.Object:
+        fmt.Println("Hmmm, an object?")
+    case jitjson.Array:
+        fmt.Println("An array? Interesting...")
+    default:
+        fmt.Println("Huh, I have no idea what this is...")
+    }
+}
+
+func main() {
+    whichType([]byte(`null`)) // Output: null
+    whichType([]byte(`{"Name": "John", "Age": 30}`)) // Output: Hmmm, an object?
+    whichType([]byte(`[1, 2, 3]`)) // Output: An array? Interesting...
+    whichType([]byte(`true`)) // Output: Huh, I have no idea what this is...
+}
+```
+
+## Benchmarks
+
+Benchmarks are run with the `-benchmem` flag to show memory allocations.
+
+```bash
+go test -bench=. -benchmem
+```
+
+To run the benchmarks with a specific percentage of the data parsed, set the `PARSE_PERCENTAGE` environment variable.
+
+```bash
+PARSE_PERCENTAGE=0.3 go test -bench='^BenchmarkParsePercentage$' -benchmem
+```
+
+## Contributing
+
+Please report any issues or feature requests to the [GitHub repository](https://github.com/mcwalrus/go-jitjson).
 
 ## About
 

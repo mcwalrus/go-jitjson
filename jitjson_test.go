@@ -22,11 +22,7 @@ func TestNewJitJSON(t *testing.T) {
 		City: "New York",
 	}
 
-	jsonData := []byte(`{
-		"Name": "John",
-		"Age": 30,
-		"City": "New York"
-	}`)
+	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
 
 	t.Run("Marshal Person", func(t *testing.T) {
 		jit := jitjson.New(person)
