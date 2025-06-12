@@ -2,6 +2,10 @@
 
 `go-jitjson` is a Go library that provides just-in-time (JIT) JSON to allow defered marshaling and unmarshaling until if, or when the data is actually needed.
 
+JitJSON marries to the interface of the [encoding/json](https://pkg.go.dev/encoding/json) standard library, making it a drop in replacement.
+
+See the [Quick Start](#quick-start) guide below for how to use library.
+
 ## Key Features
 
 - 🚀 Improve performance for JSON datasets by avoiding unnecessary parsing
@@ -16,9 +20,9 @@
 go get github.com/mcwalrus/go-jitjson
 ```
 
-## When to use JitJSON?
+## When to Use?
 
-Use JitJSON when you have a JSON dataset that is large or complex, and you want to avoid parsing the entire dataset when only a small portion of the data is needed. The most significant benefit of using JitJSON is from the reduction of memory allocations, and in relation the number of GC cycles required, which will be significant when working with large datasets or real-time / monolithic applications. If you intend to parse all data of a JSON dataset, then JitJSON will not provide any benefit.
+Use JitJSON when you have a JSON dataset that you want to avoid parsing until you need it. The most significant benefit of using JitJSON is from the reduction of memory allocations when not all data needs to be parsed. JitJSON can reduce the number of garbage collection (GC) cycles required, which can provide performance benefits when processing large datasets in real-time or monolithic Go-based applications. For advanced usage, you can partially unmarshal data from json datasets. If you intend to parse all your data from a JSON dataset, JitJSON will not provide any benefit.
 
 ## Quick Start
 
