@@ -1,6 +1,6 @@
 # Go-JitJSON
 
-`go-jitjson` is a Go library that provides just-in-time (JIT) JSON parsing to allow defered marshaling and unmarshaling for if or when the data is actually needed.
+`go-jitjson` is a Go library to provide defered just-in-time (JIT) JSON parsing for if and when the data is actually needed.
 
 ## Key Features
 
@@ -18,7 +18,8 @@ go get github.com/mcwalrus/go-jitjson
 
 ## When to Use?
 
-Use JitJSON when you may conditionally avoid parsing data, by either means of marshaling or unmarshaling. With avoidance, you can reduce memory allocation, the number of garbage collection (GC) cycles performed, as well as improving CPU perforamnce with bypassing `encoding/json`. You may also partially unmarshal data from json datasets or objects fields. If you intend to parse all your data, JitJSON will not provide any benefit. This library is intended for use in real-time, monolithic, or large data driven applications.
+Use jitjson in cases where you can conditionally avoid parsing json data. With avoidance, bypasses to `encoding/json` can improve CPU op/s, memory allocation and reduce the number of garbage collection (GC) cycles performed. There are other cases to consider for partially parsing json data. You can parse json from or into structs with nested jitjson fields, or between slices and maps with jitjson elements. For dynamic unmarshalling of json data that you do know the specifcation of, use `AnyJitJSON`. If you intend to parse all your data, jitjson will not provide any benefit. This library is intended for use in real-time, monolithic, or large data driven applications.
+
 
 ## Quick Start
 
@@ -502,6 +503,8 @@ To run the benchmarks with a specific percentage of the data parsed, set the `PA
 ```bash
 PARSE_PERCENTAGE=0.3 go test -bench='^BenchmarkParsePercentage$' -benchmem
 ```
+
+Please note, jitjson benchmarks perform relative to the size and volume of data the library is applied to. Monolith applications will benifit the most which reductions in garbage collection cycles considering not all data needs to be parsed.
 
 ## Contributing
 

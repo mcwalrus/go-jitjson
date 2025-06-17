@@ -90,6 +90,8 @@ func BenchmarkParsePercentage(b *testing.B) {
 	if err != nil {
 		b.Log("PARSE_PERCENTAGE not set, defaulting to 0.3")
 		parsePercent = 0.3
+	} else {
+		b.Logf("PARSE_PERCENTAGE is set to %f", parsePercent)
 	}
 
 	if parsePercent < 0 || parsePercent > 1 {
