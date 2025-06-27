@@ -18,7 +18,13 @@ go get github.com/mcwalrus/go-jitjson
 
 ## When to Use?
 
-Use jitjson in cases where you can conditionally avoid parsing json data. With avoidance, bypasses to `encoding/json` can improve CPU op/s, memory allocation and reduce the number of garbage collection (GC) cycles performed. There are other cases to consider for partially parsing json data. You can parse json from or into structs with nested jitjson fields, or between slices and maps with jitjson elements. For dynamic unmarshalling of json data that you do know the specifcation of, use `AnyJitJSON`. If you intend to parse all your data, jitjson will not provide any benefit. This library is intended for use in real-time, monolithic, or large data driven applications.
+**1) Conditional parsing**
+
+Use jitjson in cases to avoid unnecassary parsing json data. When using jitjson, json encodings and Go values are only stored until the are requested to be parsed. Bypasses to `encoding/json` can improve resource allocations and reduce the number and overhead of Go garbage collection cycles. If you intend to parse all your data, jitjson will not provide any benefit.
+
+**2) Partial json parsing**
+
+Use jitjson in cases where you want to avoid parsing all data at once. You can parse json from or into structs with nested jitjson fields, or between slices and maps with jitjson elements. For unmarshalling json encodings that you do know the type or specifcation of, use `AnyJitJSON`. This library is intended for use across real-time, monolithic, or large data driven applications.
 
 
 ## Quick Start
