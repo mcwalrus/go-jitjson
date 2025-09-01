@@ -32,7 +32,7 @@ func (jit *JitJSON[T]) Set(val T) {
 
 // Marshal performs deferred json marshaling for the value of JitJSON[T]. The method can return without evaluating
 // 'json.Marshal' if the value has been marshaled previously. Once marshaled, the encoded value is stored with the
-// jitjson for future use. If there is no value to marshal, the method returns nil, nil.
+// jitjson for future retrieval. If there is no value to marshal, the method returns nil, nil.
 func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	if jit.data != nil {
 		return jit.data, nil
@@ -52,7 +52,7 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 
 // Unmarshal performs deferred json unmarshaling for the value of JitJSON[T]. The method can return without evaluating
 // 'json.Unmarshal' if the value has been unmarshaled previously. Once unmarshaled, the decoded value is stored with
-// the jitjson for future use. If there is no JSON data to unmarshal, the zero value of type T is returned.
+// the jitjson for future retrieval. If there is no JSON data to unmarshal, the zero value of type T is returned.
 // If the JSON data does not unmarshal into the type T, the method will return an error.
 func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	if jit.val != nil {

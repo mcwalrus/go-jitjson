@@ -10,22 +10,17 @@
 - 🏃‍♂️ Improve handling of streaming JSON data
 - 🧩 Dynamic type parsing of JSON
 
+## Motivation
+
+At heart, `jitjson.JitJSON[T any]` is simply an encoding, value `T` pair struct. It allows bypasses to `encoding/json`, so you can reduce resource allocations plus both the number and cost of Go garbage collection opreations when parsing large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Also `jitjson.AnyJitJSON[T any]` can provide complete dymanic jit unmarshalling of json encodings.
+
 ## Installation
+
+This library requires Go version >=1.18:
 
 ```bash
 go get github.com/mcwalrus/go-jitjson
 ```
-
-## When to Use?
-
-**1) Conditional parsing**
-
-Use jitjson in cases to avoid unnecassary parsing json data. When using jitjson, json encodings and Go values are only stored until the are requested to be parsed. Bypasses to `encoding/json` can improve resource allocations and reduce the number and overhead of Go garbage collection cycles. If you intend to parse all your data, jitjson will not provide any benefit.
-
-**2) Partial json parsing**
-
-Use jitjson in cases where you want to avoid parsing all data at once. You can parse json from or into structs with nested jitjson fields, or between slices and maps with jitjson elements. For unmarshalling json encodings that you do know the type or specifcation of, use `AnyJitJSON`. This library is intended for use across real-time, monolithic, or large data driven applications.
-
 
 ## Quick Start
 
