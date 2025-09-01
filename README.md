@@ -22,6 +22,18 @@ This library requires Go version >=1.18:
 go get github.com/mcwalrus/go-jitjson
 ```
 
+### json/v2
+
+For support of [encoding/json/v2](https://pkg.go.dev/encoding/json/v2), you can use the v2 version of this library with Go versions >= 1.25:
+
+```bash
+go get github.com/mcwalrus/go-jitjson/v2
+```
+
+Note, you will also need to apply Go builds with `GOEXPERIMENT=jsonv2` environment variable set.
+
+For reference, both versions of the library are supported and kept up to date.
+
 ## Quick Start
 
 ### Marshaling

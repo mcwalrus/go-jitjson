@@ -2,10 +2,6 @@
 
 package jitjson
 
-import (
-	"encoding/json"
-)
-
 // JitJSON[T] provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until needed via Marshal and Unmarshal methods.
 // You can think of JitJSON[T] as a lazy two way JSON parser, implemented with value caching.
@@ -42,7 +38,7 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	}
 
 	var err error
-	jit.data, err = json.Marshal(jit.val)
+	jit.data, err = parser.marshal(jit.val)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +60,7 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	}
 
 	jit.val = &val
-	err := json.Unmarshal(jit.data, jit.val)
+	err := parser.unmarshal(jit.data, jit.val)
 	if err != nil {
 		return val, err
 	}
