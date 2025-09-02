@@ -34,7 +34,7 @@ type Person struct {
 	City string
 }
 
-// Uses encoding/json/v2 for marshaling.
+// Uses encoding/json/v2 for marshaling and unmarshalling.
 func main() {
 
 	v2Parser := &jsonParserV2{}
