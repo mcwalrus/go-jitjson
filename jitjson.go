@@ -43,8 +43,14 @@ func (jit *JitJSON[T]) SetParser(name string) error {
 }
 
 // Parser returns the name of the parser used by JitJSON[T].
+// A parser might be nil when the jitjson was initialised without a parser.
+// In this case, the JitJSON will return "<nil>" which is later set to the default parser.
 func (jit *JitJSON[T]) Parser() string {
-	return jit.parser.Name()
+	if jit.parser == nil {
+		return "<nil>"
+	} else {
+		return jit.parser.Name()
+	}
 }
 
 // Marshal performs deferred json marshaling for the value of JitJSON[T]. The method can return without evaluating

@@ -311,6 +311,13 @@ func TestJitJSONSetParser(t *testing.T) {
 	testData := TestData{Message: "hello"}
 	originalDefault := DefaultParser()
 
+	t.Run("nil parser", func(t *testing.T) {
+		var jit *JitJSON[TestData]
+		if jit.Parser() != "<nil>" {
+			t.Errorf("expected parser %q, got %q", "<nil>", jit.Parser())
+		}
+	})
+
 	t.Run("successful parser change", func(t *testing.T) {
 		parser := &mockParser{
 			name:          "instance-parser",
