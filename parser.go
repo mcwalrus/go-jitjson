@@ -7,16 +7,38 @@ import (
 	"unsafe"
 )
 
-// JSONParser is an interface for allowing use of custom JSON parsers.
-// This is useful for applications that may use multiple JSON parsers,
-// such as encoding/json and encoding/json/v2.
-// The default parser is "encoding/json".
+// JSONParser is an interface that allows injection of custom JSON parsers into the jitjson library.
+// This enables applications to use alternative JSON implementations beyond the standard library,
+// such as encoding/json/v2, or other high-performance JSON libraries.
+//
+// The default parser is "encoding/json" from the standard library. Custom parsers can be
+// registered using RegisterParser() and set as the default using SetDefaultParser().
+//
+// Example usage:
+//
+//	type customParser struct{}
+//
+//	func (p *customParser) Name() string { return "custom-json" }
+//	func (p *customParser) Marshal(v interface{}) ([]byte, error) { /* implementation */ }
+//	func (p *customParser) Unmarshal(data []byte, v interface{}) error { /* implementation */ }
+//
+//	jitjson.MustRegisterParser(&customParser{})
+//	jitjson.MustSetDefaultParser("custom-json")
 type JSONParser interface {
+	// Name returns a unique identifier for this parser implementation.
+	// This name is used for registration and selection of parsers.
 	Name() string
+
+	// Marshal encodes the given value v into JSON bytes.
+	// The behavior should be equivalent to encoding/json.Marshal.
 	Marshal(v interface{}) ([]byte, error)
+
+	// Unmarshal decodes JSON data into the value pointed to by v.
+	// The behavior should be equivalent to encoding/json.Unmarshal.
 	Unmarshal(data []byte, v interface{}) error
 }
 
+// jsonParser is the default JSONParser using the encoding/json package.
 type jsonParser struct{}
 
 var _ JSONParser = (*jsonParser)(nil)
@@ -46,9 +68,21 @@ func init() {
 	defaultParserName.Store(stdParser.Name())
 }
 
-// RegisterParser adds a new JSONParser to the registry.
-// If the parser is nil, provides no name, or is already registered, an error will be returned.
-// The default pre-registered parser is "encoding/json".
+// RegisterParser adds a JSONParser implementation to the global parser registry.
+// This allows the jitjson library to use alternative JSON parsing implementations
+// for just-in-time marshalling and unmarshalling operations.
+//
+// The parser must provide a unique name via its Name() method, which will be used
+// as the identifier for selecting this parser. If a parser with the same name
+// already exists, an error is returned.
+//
+// Example:
+//
+//	parser := &myCustomParser{}
+//	err := jitjson.RegisterParser(parser)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 func RegisterParser(parser JSONParser) error {
 	if parser == nil {
 		return fmt.Errorf("parser is nil")
@@ -64,7 +98,13 @@ func RegisterParser(parser JSONParser) error {
 	return nil
 }
 
-// MustRegisterParser panics if RegisterParser fails.
+// MustRegisterParser registers a JSONParser implementation and panics on failure.
+// This is a convenience wrapper around [RegisterParser].
+//
+// Example:
+//
+//	parser := &myCustomParser{}
+//	jitjson.MustRegisterParser(parser) // panics if registration fails
 func MustRegisterParser(parser JSONParser) {
 	if parser == nil {
 		panic("parser is nil")
@@ -74,9 +114,27 @@ func MustRegisterParser(parser JSONParser) {
 	}
 }
 
-// SetDefaultParser changes the global default parser.
-// Returns an error if the parser is not pre-registered.
-// The default pre-registered parser is "encoding/json" which can be changed, or reset.
+// DefaultParser returns the name of the currently configured default parser.
+// The default parser is initially set to "encoding/json" but can be changed
+// using [SetDefaultParser].
+func DefaultParser() string {
+	return defaultParserName.Load().(string)
+}
+
+// SetDefaultParser changes the global default parser used by all new JitJSON instances.
+// The parser must already be registered via [RegisterParser].
+//
+// By default, the library uses "encoding/json" as the default parser. You can change
+// this to any registered parser name, including custom implementations or alternative
+// JSON libraries.
+//
+// Example:
+//
+//	// Assuming a custom parser was registered with name "fast-json"
+//	err := jitjson.SetDefaultParser("fast-json")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 func SetDefaultParser(name string) error {
 	parser, exists := parsers[name]
 	if !exists {
@@ -85,18 +143,6 @@ func SetDefaultParser(name string) error {
 	defaultParserName.Store(name)
 	atomic.StorePointer(&defaultParser, unsafe.Pointer(&parser))
 	return nil
-}
-
-// MustSetDefaultParser panics if SetDefaultParser fails.
-func MustSetDefaultParser(name string) {
-	if err := SetDefaultParser(name); err != nil {
-		panic(err)
-	}
-}
-
-// DefaultParser returns the name of the current default parser.
-func DefaultParser() string {
-	return defaultParserName.Load().(string)
 }
 
 func getDefaultParser() JSONParser {
