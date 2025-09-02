@@ -4,18 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"testing"
-	"unsafe"
 )
 
+// resetParserRegistry resets the parser registry to the default state.
 func resetParserRegistry(t *testing.T) {
 	t.Helper()
 	parsers = make(map[string]JSONParser)
-	var stdParser JSONParser = &jsonParser{}
-	parsers[stdParser.Name()] = stdParser
-	atomic.StorePointer(&defaultParser, unsafe.Pointer(&jsonParser{}))
-	defaultParserName.Store("encoding/json")
+	setupParserRegistry()
 }
 
 // mockParser is a test implementation of JSONParser that adds prefixes to test behavior
@@ -42,7 +38,7 @@ func (m *mockParser) Marshal(v interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	// Add prefix to the JSON string if provided
+	// Add prefix to the JSON string if prefix is set
 	if m.marshalPrefix != "" {
 		result := fmt.Sprintf(`%s%s`, m.marshalPrefix, string(data))
 		return []byte(result), nil
@@ -58,7 +54,7 @@ func (m *mockParser) Unmarshal(data []byte, v interface{}) error {
 
 	dataStr := string(data)
 
-	// Remove our test prefix if present
+	// Remove test prefix if present
 	if m.marshalPrefix != "" && strings.HasPrefix(dataStr, m.marshalPrefix) {
 		dataStr = strings.TrimPrefix(dataStr, m.marshalPrefix)
 	}

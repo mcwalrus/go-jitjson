@@ -62,6 +62,11 @@ var defaultParserName atomic.Value
 var parsers = make(map[string]JSONParser)
 
 func init() {
+	setupParserRegistry()
+}
+
+// setupParserRegistry sets up the parser registry with the default parser.
+func setupParserRegistry() {
 	var stdParser JSONParser = &jsonParser{}
 	parsers[stdParser.Name()] = stdParser
 	atomic.StorePointer(&defaultParser, unsafe.Pointer(&stdParser))
