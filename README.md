@@ -6,13 +6,13 @@
 
 - 🚀 Improve performance for JSON datasets by avoiding unnecessary parsing
 - 💾 Reduce memory usage when working with multiple JSON objects
-- 🔄 Seamless integration with existing Go JSON interfaces
+- 🛠️ Customisable parsing beyond standard Go encoding/json
 - 🏃‍♂️ Improve handling of streaming JSON data
 - 🧩 Dynamic type parsing of JSON
 
 ## Motivation
 
-At heart, `jitjson.JitJSON[T any]` is simply an encoding, value `T` pair struct. It allows bypasses to `encoding/json`, so you can reduce resource allocations plus both the number and cost of Go garbage collection opreations when parsing large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Also `jitjson.AnyJitJSON[T any]` can provide complete dymanic jit unmarshalling of json encodings.
+At heart, `jitjson.JitJSON[T any]` is simply an encoding, value `T` pair struct. It allows bypasses to `encoding/json` to reduce resource allocations and computational overhead, plus improves garbage collection opreations when parsing large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Also `jitjson.AnyJitJSON[T any]` can provide complete dymanic jit unmarshalling of json encodings when data is unknown.
 
 ## Installation
 
@@ -22,17 +22,25 @@ This library requires Go version >=1.18:
 go get github.com/mcwalrus/go-jitjson
 ```
 
-### json/v2
+## Parsers
 
-For support of [encoding/json/v2](https://pkg.go.dev/encoding/json/v2), you can use the v2 version of this library with Go versions >= 1.25:
+You can provide your own custom JSON parser implementation to the library.
 
-```bash
-go get github.com/mcwalrus/go-jitjson/v2
+```Go
+var parser jitjson.JSONParser
+jitjson.MustRegisterParser(parser)
+jitjson.SetDefaultParser("custom-parser")
 ```
 
-Note, you will also need to apply Go builds with `GOEXPERIMENT=jsonv2` environment variable set.
+### Using json/v2
 
-For reference, both versions of the library are supported and kept up to date.
+This module supports [encoding/json/v2](https://pkg.go.dev/encoding/json/v2).
+
+By default, the standard parser is `encoding/json` which can be updated via `jitjson.SetDefaultParser` for new applications.
+
+Note, you will also need to use Go 1.25 and builds with `GOEXPERIMENT=jsonv2` environment variable set.
+
+For more information, please consult the [relevant documentation](https://pkg.go.dev/encoding/json#hdr-Migrating_to_v2).
 
 ## Quick Start
 

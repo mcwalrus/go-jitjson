@@ -1,98 +1,104 @@
-// go:build go1.25
-
 package jitjson
 
 import (
+	"encoding/json"
 	"fmt"
-
-	jsonv1 "encoding/json"
-	jsonv2 "encoding/json/v2"
+	"sync/atomic"
+	"unsafe"
 )
 
-// ParserVersion is the version of the JSON library to use.
-type ParserVersion int
-
-const (
-	JsonV1 ParserVersion = 1
-	JsonV2 ParserVersion = 2
-)
-
-// parser is used by jitjson.go.
-// No synchronization is applied for performance reasons.
-var (
-	parser jsonParser = jsonV1{}
-)
-
-// defaultParser returns the v2 json parser.
-func defaultParser() jsonParser {
-	return parser
+// JSONParser is an interface for allowing use of custom JSON parsers.
+// This is useful for applications that may use multiple JSON parsers,
+// such as encoding/json and encoding/json/v2.
+// The default parser is "encoding/json".
+type JSONParser interface {
+	Name() string
+	Marshal(v interface{}) ([]byte, error)
+	Unmarshal(data []byte, v interface{}) error
 }
 
-func parserFromVersion(version ParserVersion) (jsonParser, error) {
-	if version == JsonV1 {
-		return jsonV1{}, nil
-	} else if version == JsonV2 {
-		return jsonV2{}, nil
-	} else {
-		return nil, fmt.Errorf("unsupported json version: %d", version)
-	}
+type jsonParser struct{}
+
+var _ JSONParser = (*jsonParser)(nil)
+
+func (j *jsonParser) Name() string {
+	return "encoding/json"
 }
 
-// SetDefaultParser sets the encoding/json version parser to use.
-// By default, the library uses the encoding/json/v2 parser.
-// If the version is not supported, the function returns an error.
-func SetDefaultParser(version ParserVersion) error {
-	p, err := parserFromVersion(version)
-	if err != nil {
-		return err
+func (j *jsonParser) Marshal(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+func (j *jsonParser) Unmarshal(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
+}
+
+// defaultParser is the default JSONParser used by the library.
+var defaultParser unsafe.Pointer
+var defaultParserName atomic.Value
+
+var parsers = make(map[string]JSONParser)
+
+func init() {
+	var stdParser JSONParser = &jsonParser{}
+	parsers[stdParser.Name()] = stdParser
+	atomic.StorePointer(&defaultParser, unsafe.Pointer(&stdParser))
+	defaultParserName.Store(stdParser.Name())
+}
+
+// RegisterParser adds a new JSONParser to the registry.
+// If the parser is nil, provides no name, or is already registered, an error will be returned.
+// The default pre-registered parser is "encoding/json".
+func RegisterParser(parser JSONParser) error {
+	if parser == nil {
+		return fmt.Errorf("parser is nil")
 	}
-	parser = p
+	name := parser.Name()
+	if name == "" {
+		return fmt.Errorf("parser name is empty")
+	}
+	if _, exists := parsers[name]; exists {
+		return fmt.Errorf("parser %s already registered", name)
+	}
+	parsers[name] = parser
 	return nil
 }
 
-// MustSetDefaultParser sets the default parser and panics if the version is not supported.
-// This is a convenience function for backward compatibility.
-func MustSetDefaultParser(version ParserVersion) {
-	if err := SetDefaultParser(version); err != nil {
+// MustRegisterParser panics if RegisterParser fails.
+func MustRegisterParser(parser JSONParser) {
+	if parser == nil {
+		panic("parser is nil")
+	}
+	if err := RegisterParser(parser); err != nil {
 		panic(err)
 	}
 }
 
-type jsonParser interface {
-	name() string
-	marshal(v interface{}) ([]byte, error)
-	unmarshal(data []byte, v interface{}) error
+// SetDefaultParser changes the global default parser.
+// Returns an error if the parser is not pre-registered.
+// The default pre-registered parser is "encoding/json" which can be changed, or reset.
+func SetDefaultParser(name string) error {
+	parser, exists := parsers[name]
+	if !exists {
+		return fmt.Errorf("parser %s not registered", name)
+	}
+	defaultParserName.Store(name)
+	atomic.StorePointer(&defaultParser, unsafe.Pointer(&parser))
+	return nil
 }
 
-type jsonV1 struct{}
-
-func (j jsonV1) marshal(v interface{}) ([]byte, error) {
-	return jsonv1.Marshal(v)
+// MustSetDefaultParser panics if SetDefaultParser fails.
+func MustSetDefaultParser(name string) {
+	if err := SetDefaultParser(name); err != nil {
+		panic(err)
+	}
 }
 
-func (j jsonV1) unmarshal(data []byte, v interface{}) error {
-	return jsonv1.Unmarshal(data, v)
+// DefaultParser returns the name of the current default parser.
+func DefaultParser() string {
+	return defaultParserName.Load().(string)
 }
 
-func (j jsonV1) name() string {
-	return "encoding/json"
-}
-
-type jsonV2 struct{}
-
-func (j jsonV2) marshal(v interface{}) ([]byte, error) {
-	return jsonv2.Marshal(v)
-}
-
-func (j jsonV2) unmarshal(data []byte, v interface{}) error {
-	return jsonv2.Unmarshal(data, v)
-}
-
-func (j jsonV2) name() string {
-	return "encoding/json/v2"
-}
-
-// GetDefaultParser returns the name of the currently configured default parser.
-func GetDefaultParser() string {
-	return parser.name()
+func getDefaultParser() JSONParser {
+	return *(*JSONParser)(atomic.LoadPointer(&defaultParser))
 }

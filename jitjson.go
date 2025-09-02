@@ -2,6 +2,8 @@
 
 package jitjson
 
+import "fmt"
+
 // JitJSON[T] provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
 // You can think of JitJSON[T] as a lazy two way JSON parser, implemented for deferred value retrieval.
@@ -9,43 +11,40 @@ package jitjson
 type JitJSON[T any] struct {
 	data   []byte
 	val    *T
-	parser jsonParser
+	parser JSONParser
 }
 
-// New creates JitJSON[T] from a value.
-// The default parser is used, which can be changed with the SetParser method.
+// New creates JitJSON[T] from a value, with the default parser set.
 func New[T any](val T) *JitJSON[T] {
-	return &JitJSON[T]{val: &val, parser: defaultParser()}
+	return &JitJSON[T]{val: &val, parser: getDefaultParser()}
 }
 
-// NewFromBytes creates a JitJSON[T] from JSON byte data.
-// The default parser is used, which can be changed with the SetParser method.
+// NewFromBytes creates a JitJSON[T] from an encoding, with the default parser set.
+// If the encoding is invalid JSON, an error will be observed once Marshal is called.
 func NewFromBytes[T any](data []byte) *JitJSON[T] {
-	return &JitJSON[T]{data: data, parser: defaultParser()}
+	return &JitJSON[T]{data: data, parser: getDefaultParser()}
 }
 
-// Set JitJSON[T] to a new value.
+// Set a new value to JitJSON[T].
 func (jit *JitJSON[T]) Set(val T) {
 	jit.val = &val
 	jit.data = nil
 }
 
 // SetParser sets the parser to use for the JitJSON[T].
-// If the version is not supported, the function returns an error.
-func (jit *JitJSON[T]) SetParser(version ParserVersion) error {
-	p, err := parserFromVersion(version)
-	if err != nil {
-		return err
+// Returns an error if the parser is not pre-registered by using [RegisterParser].
+func (jit *JitJSON[T]) SetParser(name string) error {
+	parser, exists := parsers[name]
+	if !exists {
+		return fmt.Errorf("parser %s not registered", name)
 	}
-	jit.parser = p
+	jit.parser = parser
 	return nil
 }
 
-// MustSetParser sets the parser and panics if the version is not supported.
-func (jit *JitJSON[T]) MustSetParser(version ParserVersion) {
-	if err := jit.SetParser(version); err != nil {
-		panic(err)
-	}
+// Parser returns the name of the parser used by JitJSON[T].
+func (jit *JitJSON[T]) Parser() string {
+	return jit.parser.Name()
 }
 
 // Marshal performs deferred json marshaling for the value of JitJSON[T]. The method can return without evaluating
@@ -58,9 +57,12 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	if jit.val == nil {
 		return nil, nil
 	}
+	if jit.parser == nil {
+		jit.parser = getDefaultParser()
+	}
 
 	var err error
-	jit.data, err = jit.parser.marshal(jit.val)
+	jit.data, err = jit.parser.Marshal(jit.val)
 	if err != nil {
 		return nil, err
 	}
@@ -80,19 +82,17 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	if jit.data == nil {
 		return val, nil
 	}
+	if jit.parser == nil {
+		jit.parser = getDefaultParser()
+	}
 
 	jit.val = &val
-	err := jit.parser.unmarshal(jit.data, jit.val)
+	err := jit.parser.Unmarshal(jit.data, jit.val)
 	if err != nil {
 		return val, err
 	}
 
 	return *jit.val, nil
-}
-
-// Parser returns the name of the json library version.
-func (jit *JitJSON[T]) Parser() string {
-	return jit.parser.name()
 }
 
 // MarshalJSON can be used to marshal JitJSON[T] to JSON.
