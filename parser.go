@@ -145,6 +145,20 @@ func SetDefaultParser(name string) error {
 	return nil
 }
 
+// MustSetDefaultParser changes the global default parser and panics on failure.
+// This is a convenience wrapper around [SetDefaultParser].
+//
+// Example:
+//
+//	parser := &jsonV2Parser{}
+//	jitjson.MustRegisterParser(parser) // panics if registration fails
+//	jitjson.MustSetDefaultParser("encoding/json/v2") // panics if parser not registered
+func MustSetDefaultParser(name string) {
+	if err := SetDefaultParser(name); err != nil {
+		panic(err)
+	}
+}
+
 func getDefaultParser() JSONParser {
 	return *(*JSONParser)(atomic.LoadPointer(&defaultParser))
 }
