@@ -4,15 +4,17 @@
 
 ## Key Features
 
-- 🚀 Improve performance for JSON datasets by avoiding unnecessary parsing
+- 🚀 Improves performance for JSON datasets by avoiding unnecessary parsing
+- 🛠️ Customisable parsing beyond Go's standard library encoding/json
 - 💾 Reduce memory usage when working with multiple JSON objects
-- 🛠️ Customisable parsing beyond standard Go encoding/json
-- 🏃‍♂️ Improve handling of streaming JSON data
+- 🔗 Integrates with existing encoding/json interface types
+- 🏃‍♂️ Improve handling with streaming JSON data
 - 🧩 Dynamic type parsing of JSON
+- 🪶 Zero dependencies
 
 ## Motivation
 
-At heart, `jitjson.JitJSON[T any]` is simply an encoding, value `T` pair struct. It allows bypasses to `encoding/json` to reduce resource allocations and computational overhead, plus improves garbage collection opreations when parsing large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Also `jitjson.AnyJitJSON[T any]` can provide complete dymanic jit unmarshalling of json encodings when data is unknown.
+At heart, this library provides a type `JitJSON[T any]` as an encoding, value `T` pair. It allows bypasses to `encoding/json` through defered parsing to reduce resource allocations, computational overhead, while improving garbage collection opreations when parsing large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Also `AnyJitJSON[T any]` provides complete dymanic jit unmarshalling of json encodings when the data structure is unknown.
 
 ## Installation
 
@@ -34,11 +36,9 @@ jitjson.SetDefaultParser("custom-parser")
 
 ### Using json/v2
 
-This module supports [encoding/json/v2](https://pkg.go.dev/encoding/json/v2).
+This module can support [encoding/json/v2](https://pkg.go.dev/encoding/json/v2) as shown under /examples.
 
 By default, the standard parser is `encoding/json` which can be updated via `jitjson.SetDefaultParser` for new applications.
-
-Note, you will also need to use Go 1.25 and builds with `GOEXPERIMENT=jsonv2` environment variable set.
 
 For more information, please consult the [relevant documentation](https://pkg.go.dev/encoding/json#hdr-Migrating_to_v2).
 
