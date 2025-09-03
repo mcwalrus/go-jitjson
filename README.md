@@ -14,9 +14,11 @@
 
 ## Motivation
 
-The library jitjson provides deferred json parsing for either [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) library calls. This is possible through generics, where either the value or json encoding is cached before any operation is called. If an operation to parse a json encoding or the value never occurs, we then reduce resource allocation and computational overhead by avoiding unnecessary work.
+The library jitjson provides deferred json parsing for either [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) library calls. This is possible through generics, where either the value or json encoding is cached before any operation is called. If an operation to parse a json encoding or the value never occurs, we then reduce resource allocation and computational overhead by avoiding unnecessary work. In effect we also see improvements to garbage collection operations involving large json datasets. 
 
-In effect we also see improvements to garbage collection operations involving large json datasets. If you intend to parse all your data, jitjson will not provide any benefit. Quite simply, `JitJSON[T any]` can be thought of as a tuple (json encoding, value `T`), similar to the Go interface type is presented - [see Go tour](https://go.dev/tour/methods/11). Also `AnyJitJSON[T any]` provides complete dynamic JIT unmarshalling of json encodings when the data structure is unknown.
+## Use Cases
+
+If you intend to parse all your data, jitjson will not provide any benefit. Deferred parsing should use `JitJSON[T any]` which can be thought of as a tuple (json encoding, value `T`), similar to the Go interface type is presented - [see Go tour](https://go.dev/tour/methods/11). Also `AnyJitJSON[T any]` provides complete dynamic JIT unmarshalling of json encodings when the data structure is unknown.
 
 ## Installation
 
@@ -38,7 +40,7 @@ jitjson.SetDefaultParser("custom-parser")
 
 ### Using json/v2
 
-This module can support [encoding/json/v2](https://pkg.go.dev/encoding/json/v2) as shown under /examples. For new applications, you can consider using json/v2 as the default parser via `jitjson.SetDefaultParser`. For more information, please consult the [encoding/json documentation](https://pkg.go.dev/encoding/json#hdr-Migrating_to_v2).
+This module can support [encoding/json/v2](https://pkg.go.dev/encoding/json/v2) as shown under [/examples/json-v2](./examples/json-v2). For new applications, you could consider using json/v2 as the default parser via `jitjson.SetDefaultParser`. Using json/v2 would be considered advanced usage and requires Go 1.25. For more information, please consult the [encoding/json documentation](https://pkg.go.dev/encoding/json#hdr-Migrating_to_v2).
 
 ## Quick Start
 
