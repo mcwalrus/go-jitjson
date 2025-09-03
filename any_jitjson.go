@@ -93,8 +93,9 @@ func (v ValueType) String() string {
 //	// Access null value
 //	fmt.Println(sl[3].IsNull()) // Output: true
 type AnyJitJSON struct {
-	val  interface{}
-	data []byte
+	val    interface{}
+	data   []byte
+	parser JSONParser
 }
 
 // NewAny creates a new AnyJitJSON from JSON data.
@@ -111,6 +112,22 @@ func (a *AnyJitJSON) String() string {
 		return string(a.data)
 	}
 	return prettyJSON.String()
+}
+
+// Parser returns the name of the parser used by AnyJitJSON.
+func (a *AnyJitJSON) Parser() string {
+	return a.parser.Name()
+}
+
+// SetParser sets the parser to use for the AnyJitJSON.
+// Returns an error if the parser is not pre-registered by using [RegisterParser].
+func (a *AnyJitJSON) SetParser(name string) error {
+	parser, exists := parsers[name]
+	if !exists {
+		return fmt.Errorf("parser %s not registered", name)
+	}
+	a.parser = parser
+	return nil
 }
 
 // Type returns the ValueType of the current AnyJitJSON value. This method can be used
@@ -171,6 +188,7 @@ func (a *AnyJitJSON) AsBool() (bool, bool) {
 	if !ok {
 		return false, false
 	}
+	jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -182,6 +200,7 @@ func (a *AnyJitJSON) AsNumber() (json.Number, bool) {
 	if !ok {
 		return "", false
 	}
+	jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -193,6 +212,7 @@ func (a *AnyJitJSON) AsString() (string, bool) {
 	if !ok {
 		return "", false
 	}
+	jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -208,7 +228,7 @@ func (a *AnyJitJSON) AsArray() ([]*AnyJitJSON, bool) {
 	}
 
 	var arr []*AnyJitJSON
-	if err := json.Unmarshal(a.data, &arr); err != nil {
+	if err := a.parser.Unmarshal(a.data, &arr); err != nil {
 		return nil, false
 	}
 
@@ -227,7 +247,7 @@ func (a *AnyJitJSON) AsObject() (map[string]*AnyJitJSON, bool) {
 	}
 
 	var obj map[string]*AnyJitJSON
-	if err := json.Unmarshal(a.data, &obj); err != nil {
+	if err := a.parser.Unmarshal(a.data, &obj); err != nil {
 		return nil, false
 	}
 
@@ -256,7 +276,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is a boolean
 	if boolRegex.Match(data) {
 		var b JitJSON[bool]
-		if err = json.Unmarshal(data, &b); err == nil {
+		if err = a.parser.Unmarshal(data, &b); err == nil {
 			a.val = &b
 			return nil
 		}
@@ -265,7 +285,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is an number
 	if numberRegex.Match(data) {
 		var num JitJSON[json.Number]
-		if err = json.Unmarshal(data, &num); err == nil {
+		if err = a.parser.Unmarshal(data, &num); err == nil {
 			a.val = &num
 			return nil
 		}
@@ -274,7 +294,7 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	// if the value is a string
 	if stringRegex.Match(data) {
 		var str JitJSON[string]
-		if err = json.Unmarshal(data, &str); err == nil {
+		if err = a.parser.Unmarshal(data, &str); err == nil {
 			a.val = &str
 			return nil
 		}
