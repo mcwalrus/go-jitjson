@@ -1,6 +1,16 @@
 # Go-JitJSON
 
-`go-jitjson` is a Go library to provide defered just-in-time (JIT) JSON parsing for if and when the data is actually needed.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/mcwalrus/go-jitjson)](https://golang.org/)
+[![CI/CD](https://github.com/mcwalrus/go-jitjson/.github/workflows/golang-ci.yml/badge.svg)](https://github.com/mcwalrus/go-jitjson/.github/workflows/golang-ci.yml)
+[![CodeQL](https://github.com/mcwalrus/go-jitjson/.github/workflows/codeql.yml/badge.svg)](https://github.com/mcwalrus/go-jitjson/.github/workflows/codeql.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mcwalrus/go-jitjson)](https://goreportcard.com/report/github.com/mcwalrus/go-jitjson)
+[![codecov](https://codecov.io/gh/mcwalrus/go-jitjson/branch/main/graph/badge.svg)](https://codecov.io/gh/mcwalrus/go-jitjson)
+[![GoDoc](https://godoc.org/github.com/mcwalrus/go-jitjson?status.svg)](https://godoc.org/github.com/mcwalrus/go-jitjson)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/github/release/mcwalrus/go-jitjson.svg)](https://github.com/mcwalrus/go-jitjson/releases/latest)
+
+
+`go-jitjson` is a Go library to provide defered just-in-time (JIT) json parsing for if and when the data is actually needed.
 
 ## Key Features
 
@@ -12,14 +22,6 @@
 - 🧩 Dynamic type parsing of JSON
 - 🪶 Zero dependencies
 
-## Motivation
-
-The library jitjson provides deferred json parsing for either [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) library calls. This is possible through generics, where either the value or json encoding is cached before any operation is called. If an operation to parse a json encoding or the value never occurs, we then reduce resource allocation and computational overhead by avoiding unnecessary work. In effect we also see improvements to garbage collection operations involving large json datasets. 
-
-## Use Cases
-
-If you intend to parse all your data, jitjson will not provide any benefit. Deferred parsing should use `JitJSON[T any]` which can be thought of as a tuple (json encoding, value `T`), similar to the Go interface type is presented - [see Go tour](https://go.dev/tour/methods/11). Also `AnyJitJSON[T any]` provides complete dynamic JIT unmarshalling of json encodings when the data structure is unknown.
-
 ## Installation
 
 This library requires Go version >=1.18:
@@ -28,19 +30,32 @@ This library requires Go version >=1.18:
 go get github.com/mcwalrus/go-jitjson
 ```
 
+## Motivation
+
+Traditional parsing with [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) processes all data immediately, even if it may never be used. Unnecessary parsing leads to wasted CPU cycles on unused data, unnecessary memory allocations, and increased pressure on garbage collection operations. Through the use of generics, jitjson avoids this problem by providing a lazy JSON parser that defers parsing operations until the data is actually needed.
+
+## Use Cases
+
+If you intend to parse all your data, jitjson will not provide any benefit. The type `JitJSON[T any]` provides a two-way deferred parser that represents a tuple of (JSON encoding, parsed value T) with built-in caching. The type implements [json.Unmarshaler](https://pkg.go.dev/encoding/json/v2#Unmarshaler) and [json.Marshaler](https://pkg.go.dev/encoding/json/v2#Marshaler) interfaces, making it a drop-in replacement for any existing applications, and provides type-safety through generics. Also `AnyJitJSON[T any]` provides a complete approach to dynamic JIT unmarshalling for json encodings when the data structure is unknown.
+
 ## Parsers
 
-By default, jitjson uses the `encoding/json` standard library. You can provide your own custom JSON parser implementation:
+By default, jitjson uses the Go `encoding/json` standard library. You can provide your own custom JSON parser implementation:
 
 ```Go
-var parser jitjson.JSONParser
-jitjson.MustRegisterParser(parser)
+var parser = CustomParser{}
+jitjson.MustRegisterParser(&parser)
 jitjson.SetDefaultParser("custom-parser")
 ```
 
 ### Using json/v2
 
-This module can support [encoding/json/v2](https://pkg.go.dev/encoding/json/v2) as shown under [/examples/json-v2](./examples/json-v2). For new applications, you could consider using json/v2 as the default parser via `jitjson.SetDefaultParser`. Using json/v2 would be considered advanced usage and requires Go 1.25. For more information, please consult the [encoding/json documentation](https://pkg.go.dev/encoding/json#hdr-Migrating_to_v2).
+When using Go 1.25 with the experimental `GOEXPERIMENT=jsonv2` build-arg set, jitjson provides opt-in support for the new [encoding/json/v2](https://pkg.go.dev/encoding/json/v2) parser. The library supports new interfaces [json/v2.UnmarshalerFrom](https://pkg.go.dev/encoding/json/v2#UnmarshalerFrom) and [json/v2.MarshalerTo](https://pkg.go.dev/encoding/json/v2#MarshalerTo) to support lower-level parsing operations via [json/jsontext](https://pkg.go.dev/github.com/go-json-experiment/json/jsontext). For more information on the json/v2, see the [offical blog post](https://go.dev/blog/jsonv2-exp). 
+
+```Go
+jitjson.DeafultParser() // "encoding/json"
+jitjson.SetDefaultParser("encoding/json/v2")
+```
 
 ## Quick Start
 

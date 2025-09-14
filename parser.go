@@ -3,6 +3,7 @@ package jitjson
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"unsafe"
 )
@@ -55,20 +56,35 @@ func (j *jsonParser) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
-// defaultParser is the default JSONParser used by the library.
-var defaultParser unsafe.Pointer
-var defaultParserName atomic.Value
-
-var parsers = make(map[string]JSONParser)
+// parsers registry with the current default parser pointers
+var (
+	parsers           map[string]JSONParser
+	defaultParser     unsafe.Pointer
+	defaultParserName atomic.Value
+	registryOnce      sync.Once
+)
 
 func init() {
-	setupParserRegistry()
+	initParserRegistry()
+}
+
+// initParserRegistry initializes the parser registry using sync.Once to prevent race conditions.
+// This ensures the registry is only initialized once, even when called from multiple init() functions.
+func initParserRegistry() {
+	registryOnce.Do(func() {
+		parsers = make(map[string]JSONParser)
+		setupParserRegistry()
+	})
 }
 
 // setupParserRegistry sets up the parser registry with the default parser.
+// Both json/v1 and json/v2 are supported.
 func setupParserRegistry() {
 	var stdParser JSONParser = &jsonParser{}
+
 	parsers[stdParser.Name()] = stdParser
+	parsers["encoding/json/v1"] = stdParser
+
 	atomic.StorePointer(&defaultParser, unsafe.Pointer(&stdParser))
 	defaultParserName.Store(stdParser.Name())
 }
@@ -141,6 +157,7 @@ func DefaultParser() string {
 //	    log.Fatal(err)
 //	}
 func SetDefaultParser(name string) error {
+	initParserRegistry() // Ensure registry is initialized
 	parser, exists := parsers[name]
 	if !exists {
 		return fmt.Errorf("parser %s not registered", name)

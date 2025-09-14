@@ -21,6 +21,7 @@ var (
 // unmarshalling operation.
 type ValueType int
 
+// Possible values for AnyJitJSON type assertions.
 const (
 	TypeNull ValueType = iota
 	TypeBool
@@ -32,7 +33,7 @@ const (
 )
 
 func (v ValueType) String() string {
-	return []string{
+	return [...]string{
 		"TypeNull",
 		"TypeBool",
 		"TypeNumber",
@@ -99,12 +100,30 @@ type AnyJitJSON struct {
 }
 
 // NewAny creates a new AnyJitJSON from JSON data.
+// If the JSON data is invalid, the error is returned.
 func NewAny(data []byte) (*AnyJitJSON, error) {
-	var a = &AnyJitJSON{}
+	a := &AnyJitJSON{}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("invalid json")
+	}
 	err := a.UnmarshalJSON(data)
-	return a, err
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
 }
 
+// String returns the JSON encoding of the value with pretty printing.
+// If the JSON encoding is invalid, the raw JSON encoding is returned.
+//
+// Example:
+//
+//	var jit *jitjson.AnyJitJSON
+//	err := json.Unmarshal([]byte(`{"key": "value"}`), &jit)
+//	if err != nil {
+//		panic(err)
+//	}
+//	fmt.Println(jit.String()) // Output: { "key": "value" }
 func (a *AnyJitJSON) String() string {
 	var prettyJSON bytes.Buffer
 	err := json.Indent(&prettyJSON, a.data, "", "  ")
@@ -115,8 +134,22 @@ func (a *AnyJitJSON) String() string {
 }
 
 // Parser returns the name of the parser used by AnyJitJSON.
+// A parser might be nil when the AnyJitJSON was initialised without a parser.
+// In this case, the AnyJitJSON will return "<nil>" which is later set to the default parser.
+//
+// Example:
+//
+//	var jit *jitjson.AnyJitJSON
+//	fmt.Println(jit.Parser()) // Output: <nil>
+//
+//	jit = jitjson.NewAny(Person{})
+//	fmt.Println(jit.Parser()) // Output: encoding/json
 func (a *AnyJitJSON) Parser() string {
-	return a.parser.Name()
+	if a.parser == nil {
+		return "<nil>"
+	} else {
+		return a.parser.Name()
+	}
 }
 
 // SetParser sets the parser to use for the AnyJitJSON.
@@ -188,7 +221,7 @@ func (a *AnyJitJSON) AsBool() (bool, bool) {
 	if !ok {
 		return false, false
 	}
-	jit.SetParser(a.parser.Name())
+	_ = jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -200,7 +233,7 @@ func (a *AnyJitJSON) AsNumber() (json.Number, bool) {
 	if !ok {
 		return "", false
 	}
-	jit.SetParser(a.parser.Name())
+	_ = jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -212,7 +245,7 @@ func (a *AnyJitJSON) AsString() (string, bool) {
 	if !ok {
 		return "", false
 	}
-	jit.SetParser(a.parser.Name())
+	_ = jit.SetParser(a.parser.Name())
 	val, _ := jit.Unmarshal()
 	return val, true
 }
@@ -266,6 +299,11 @@ func (a *AnyJitJSON) UnmarshalJSON(data []byte) error {
 	a.val = nil
 	a.data = data
 	var err error
+
+	// Set default parser
+	if a.parser == nil {
+		a.parser = getDefaultParser()
+	}
 
 	// if the value is null
 	if nullRegex.Match(data) {

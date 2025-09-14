@@ -208,7 +208,7 @@ func generateNestedObjects(depth int) []byte {
 	if depth <= 0 {
 		return nil
 	}
-	var obj *Object = &Object{}
+	obj := &Object{}
 	err := json.Unmarshal([]byte(nestedObjectTemplate), obj)
 	if err != nil {
 		panic(err)
@@ -227,8 +227,7 @@ func buildNestedObject(depth int) *Object {
 	if depth <= 0 {
 		return nil
 	}
-
-	var obj = &Object{}
+	obj := &Object{}
 	err := json.Unmarshal([]byte(nestedObjectTemplate), obj)
 	if err != nil {
 		panic(err)

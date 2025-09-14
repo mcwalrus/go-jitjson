@@ -4,7 +4,7 @@ package jitjson
 
 import "fmt"
 
-// JitJSON[T] provides just-in-time (JIT) JSON parsing in Go for a value of type T.
+// JitJSON provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
 // You can think of JitJSON[T] as a lazy two way JSON parser with results caching implemented.
 type JitJSON[T any] struct {
@@ -25,9 +25,15 @@ func NewFromBytes[T any](data []byte) *JitJSON[T] {
 }
 
 // Set a new value to JitJSON[T].
-func (jit *JitJSON[T]) Set(val T) {
+func (jit *JitJSON[T]) SetValue(val T) {
 	jit.val = &val
 	jit.data = nil
+}
+
+// Set a new encoding to JitJSON[T].
+func (jit *JitJSON[T]) SetBytes(data []byte) {
+	jit.val = nil
+	jit.data = data
 }
 
 // SetParser sets the parser to use for the JitJSON[T].
@@ -42,7 +48,7 @@ func (jit *JitJSON[T]) SetParser(name string) error {
 }
 
 // Parser returns the name of the parser used by JitJSON[T].
-// A parser might be nil when the jitjson was initialised without a parser.
+// A parser might be nil when the JitJSON was initialised without a parser.
 // In this case, the JitJSON will return "<nil>" which is later set to the default parser.
 //
 // Example:

@@ -209,7 +209,7 @@ func TestMustSetDefaultParser(t *testing.T) {
 			}
 		}()
 		MustSetDefaultParser("must-parser")
-		if DefaultParser() == "must-parser" {
+		if DefaultParser() != "must-parser" {
 			t.Errorf("expected default to be %q, got %q", "must-parser", DefaultParser())
 		}
 	})
@@ -311,14 +311,45 @@ func TestJitJSONSetParser(t *testing.T) {
 	testData := TestData{Message: "hello"}
 	originalDefault := DefaultParser()
 
-	t.Run("nil parser", func(t *testing.T) {
-		var jit *JitJSON[TestData]
+	t.Run("JitJSON nil parser", func(t *testing.T) {
+		var jit = &JitJSON[TestData]{}
 		if jit.Parser() != "<nil>" {
 			t.Errorf("expected parser %q, got %q", "<nil>", jit.Parser())
 		}
 	})
 
-	t.Run("successful parser change", func(t *testing.T) {
+	t.Run("AnyJitJSON nil parser", func(t *testing.T) {
+		a := &AnyJitJSON{}
+		result := a.Parser()
+		expected := "<nil>"
+		if result != expected {
+			t.Errorf("Parser() = %q, want %q", result, expected)
+		}
+	})
+
+	t.Run("JitJSON uses default parser on marshal", func(t *testing.T) {
+		var jit = New(testData)
+		jit.Marshal()
+		if jit.Parser() != originalDefault {
+			t.Errorf("expected parser %q, got %q", originalDefault, jit.Parser())
+		}
+	})
+
+	t.Run("AnyJitJSON uses default parser on marshal", func(t *testing.T) {
+		var a AnyJitJSON
+		err := a.UnmarshalJSON([]byte(`"test"`))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		result := a.Parser()
+		if result == "<nil>" || result == "" {
+			t.Errorf("Parser() = %q, expected non-nil parser", result)
+		}
+	})
+
+	// parser provides marshalPrefix updates to vaildate that the parser is being used
+	t.Run("successful parser change JitJSON", func(t *testing.T) {
 		parser := &mockParser{
 			name:          "instance-parser",
 			marshalPrefix: "INSTANCE:",
@@ -355,9 +386,33 @@ func TestJitJSONSetParser(t *testing.T) {
 		}
 	})
 
-	t.Run("unregistered parser", func(t *testing.T) {
+	t.Run("success on AnyJitJSON set parser", func(t *testing.T) {
+		parser := &mockParser{name: "any-parser"}
+		MustRegisterParser(parser)
+		jit, err := NewAny([]byte(`{"message":"hello"}`))
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+		err = jit.SetParser("any-parser")
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+		if jit.Parser() != "any-parser" {
+			t.Errorf("expected parser %q, got %q", "any-parser", jit.Parser())
+		}
+	})
+
+	t.Run("fail on unregistered parser JitJSON", func(t *testing.T) {
 		jit := New(testData)
 		err := jit.SetParser("non-existent-parser")
+		if err == nil {
+			t.Error("expected error for unregistered parser")
+		}
+	})
+
+	t.Run("fail on unregistered parser AnyJitJSON", func(t *testing.T) {
+		var a AnyJitJSON
+		err := a.SetParser("nonexistent-parser")
 		if err == nil {
 			t.Error("expected error for unregistered parser")
 		}
