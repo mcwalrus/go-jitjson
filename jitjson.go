@@ -24,13 +24,13 @@ func NewFromBytes[T any](data []byte) *JitJSON[T] {
 	return &JitJSON[T]{data: data, parser: getDefaultParser()}
 }
 
-// Set a new value to JitJSON[T].
+// SetValue sets a new value to JitJSON[T].
 func (jit *JitJSON[T]) SetValue(val T) {
 	jit.val = &val
 	jit.data = nil
 }
 
-// Set a new encoding to JitJSON[T].
+// SetBytes sets a new encoding to JitJSON[T].
 func (jit *JitJSON[T]) SetBytes(data []byte) {
 	jit.val = nil
 	jit.data = data

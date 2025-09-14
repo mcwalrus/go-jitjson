@@ -264,7 +264,6 @@ func TestAnyJitJSON_UnmarshalJSON(t *testing.T) {
 }
 
 func TestAnyJitJSON_Type(t *testing.T) {
-
 	t.Run("nil AnyJitJSON", func(t *testing.T) {
 		var a *AnyJitJSON
 		if a.Type() != TypeNull {
