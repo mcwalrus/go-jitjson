@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/mcwalrus/go-jitjson)](https://golang.org/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mcwalrus/go-jitjson)](https://goreportcard.com/report/github.com/mcwalrus/go-jitjson)
-[![codecov](https://codecov.io/gh/mcwalrus/go-jitjson/branch/main/graph/badge.svg)](https://codecov.io/gh/mcwalrus/go-jitjson)
+[![codecov](https://codecov.io/gh/mcwalrus/go-jitjson/branch/main/graph/badge.svg)](https://codecov.io/gh/mcwalrus/go-jitjson) 
 [![GoDoc](https://godoc.org/github.com/mcwalrus/go-jitjson?status.svg)](https://godoc.org/github.com/mcwalrus/go-jitjson)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

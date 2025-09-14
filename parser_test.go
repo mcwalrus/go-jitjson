@@ -312,7 +312,7 @@ func TestJitJSONSetParser(t *testing.T) {
 	originalDefault := DefaultParser()
 
 	t.Run("JitJSON nil parser", func(t *testing.T) {
-		var jit = &JitJSON[TestData]{}
+		jit := &JitJSON[TestData]{}
 		if jit.Parser() != "<nil>" {
 			t.Errorf("expected parser %q, got %q", "<nil>", jit.Parser())
 		}
@@ -328,8 +328,8 @@ func TestJitJSONSetParser(t *testing.T) {
 	})
 
 	t.Run("JitJSON uses default parser on marshal", func(t *testing.T) {
-		var jit = New(testData)
-		jit.Marshal()
+		jit := New(testData)
+		_, _ = jit.Marshal()
 		if jit.Parser() != originalDefault {
 			t.Errorf("expected parser %q, got %q", originalDefault, jit.Parser())
 		}
