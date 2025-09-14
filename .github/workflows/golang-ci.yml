@@ -56,4 +56,9 @@ jobs:
 
     - name: Show coverage
       run: |
-        make cover
+        go test -coverprofile=coverage.txt
+
+    - name: Upload codecov report
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
