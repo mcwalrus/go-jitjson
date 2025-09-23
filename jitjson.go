@@ -24,8 +24,8 @@ func NewFromBytes[T any](data []byte) *JitJSON[T] {
 	return &JitJSON[T]{data: data, parser: getDefaultParser()}
 }
 
-// SetValue sets a new value to JitJSON[T].
-func (jit *JitJSON[T]) SetValue(val T) {
+// Set sets a new value to JitJSON[T].
+func (jit *JitJSON[T]) Set(val T) {
 	jit.val = &val
 	jit.data = nil
 }

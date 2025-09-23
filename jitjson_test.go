@@ -99,7 +99,7 @@ func TestNewJitJSON(t *testing.T) {
 
 	t.Run("Verify default parser is set on marshal", func(t *testing.T) {
 		jit := jitjson.JitJSON[Person]{}
-		jit.SetValue(person)
+		jit.Set(person)
 		_, err := jit.Marshal()
 		if err != nil {
 			t.Error(err)
@@ -132,7 +132,7 @@ func TestJitJSON_Set(t *testing.T) {
 
 	t.Run("SetValue", func(t *testing.T) {
 		jit := jitjson.NewFromBytes[Person](person1Data)
-		jit.SetValue(person1)
+		jit.Set(person1)
 
 		//
 		data, err := jit.Marshal()
