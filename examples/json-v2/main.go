@@ -61,9 +61,9 @@ func simpleExample() {
 // Explains details how to use encoding/json/v2 parser.
 func jsonv2Example() {
 
-	fmt.Println("--------------------------------")
+	fmt.Println("---------------------------------------")
 	fmt.Println("Marshaling")
-	fmt.Println("--------------------------------")
+	fmt.Println("---------------------------------------")
 
 	person := Person{
 		Name: "John Doe",
@@ -78,7 +78,7 @@ func jsonv2Example() {
 	}
 	fmt.Printf("json/v1.Marshal: %s\n", stdJSON)
 
-	jit := jitjson.New_V2(person)
+	jit := jitjson.New(person)
 
 	// json/v2.Marshal calls jit.MarshalJSONTo()
 	jitJSON, err := jsonv2.Marshal(jit)
@@ -87,9 +87,9 @@ func jsonv2Example() {
 	}
 	fmt.Printf("json/v2.Marshal: %s\n", jitJSON)
 
-	fmt.Println("--------------------------------")
+	fmt.Println("---------------------------------------")
 	fmt.Println("Unmarshaling")
-	fmt.Println("--------------------------------")
+	fmt.Println("---------------------------------------")
 
 	jsonData := `{
 		"name":"Jane Smith",
@@ -119,9 +119,9 @@ func jsonv2Example() {
 }
 
 func invalidJsonv2Example() {
-	fmt.Println("--------------------------------")
-	fmt.Println("Invalid JSON parsing")
-	fmt.Println("--------------------------------")
+	fmt.Println("---------------------------------------")
+	fmt.Println("Different semantic parsing with json/v2")
+	fmt.Println("---------------------------------------")
 
 	// Data has incorrect case-sensitivity for field names
 	// This would work with json/v1 but has been addressed in json/v2
@@ -139,7 +139,7 @@ func invalidJsonv2Example() {
 	}
 
 	// unmarshal with json/v1
-	var jit = jitjson.JitJSON_V1[Person]{}
+	var jit = jitjson.JitJSON[Person]{}
 
 	err := json.Unmarshal([]byte(jsonData), &jit)
 	if err != nil {

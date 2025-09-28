@@ -12,20 +12,20 @@ var _ jsonv2.UnmarshalerFrom = (*JitJSONV2[any])(nil)
 
 // JitJSONV2 provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
-// This implements parsing with the encoding/json/v2 library and supports new json/v2 interfaces.
+// Type implements parsing with the encoding/json/v2 library and supports new json/v2 interfaces.
 type JitJSONV2[T any] struct {
 	data []byte
 	val  *T
 }
 
-// New creates JitJSON[T] from a value, with the default parser set.
-func New_V2[T any](val T) *JitJSONV2[T] {
+// NewV2 creates JitJSON[T] from a value, with the default parser set.
+func NewV2[T any](val T) *JitJSONV2[T] {
 	return &JitJSONV2[T]{val: &val}
 }
 
-// NewFromBytes creates a JitJSON[T] from an encoding, with the default parser set.
+// NewFromBytesV2 creates a JitJSON[T] from an encoding, with the default parser set.
 // If the encoding is invalid JSON, an error will be observed once Marshal is called.
-func NewFromBytes_V2[T any](data []byte) *JitJSONV2[T] {
+func NewFromBytesV2[T any](data []byte) *JitJSONV2[T] {
 	return &JitJSONV2[T]{data: data}
 }
 

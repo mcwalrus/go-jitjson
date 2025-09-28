@@ -11,7 +11,7 @@ var _ json.Unmarshaler = (*JitJSON[any])(nil)
 
 // JitJSON provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
-// You can think of JitJSON[T] as a lazy two way JSON parser with results caching implemented.
+// Type implements parsing with the encoding/json/v1 library and supports encoding/json interfaces.
 type JitJSON[T any] struct {
 	data []byte
 	val  *T
