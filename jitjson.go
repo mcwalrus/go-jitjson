@@ -2,30 +2,34 @@
 
 package jitjson
 
-import "fmt"
+import (
+	"encoding/json"
+)
+
+var _ json.Marshaler = (*JitJSON[any])(nil)
+var _ json.Unmarshaler = (*JitJSON[any])(nil)
 
 // JitJSON provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
-// You can think of JitJSON[T] as a lazy two way JSON parser with results caching implemented.
+// Type implements parsing with the encoding/json/v1 library and supports encoding/json interfaces.
 type JitJSON[T any] struct {
-	data   []byte
-	val    *T
-	parser JSONParser
+	data []byte
+	val  *T
 }
 
 // New creates JitJSON[T] from a value, with the default parser set.
 func New[T any](val T) *JitJSON[T] {
-	return &JitJSON[T]{val: &val, parser: getDefaultParser()}
+	return &JitJSON[T]{val: &val}
 }
 
 // NewFromBytes creates a JitJSON[T] from an encoding, with the default parser set.
 // If the encoding is invalid JSON, an error will be observed once Marshal is called.
 func NewFromBytes[T any](data []byte) *JitJSON[T] {
-	return &JitJSON[T]{data: data, parser: getDefaultParser()}
+	return &JitJSON[T]{data: data}
 }
 
-// SetValue sets a new value to JitJSON[T].
-func (jit *JitJSON[T]) SetValue(val T) {
+// Set sets a new value to JitJSON[T].
+func (jit *JitJSON[T]) Set(val T) {
 	jit.val = &val
 	jit.data = nil
 }
@@ -34,36 +38,6 @@ func (jit *JitJSON[T]) SetValue(val T) {
 func (jit *JitJSON[T]) SetBytes(data []byte) {
 	jit.val = nil
 	jit.data = data
-}
-
-// SetParser sets the parser to use for the JitJSON[T].
-// Returns an error if the parser is not pre-registered by using [RegisterParser].
-func (jit *JitJSON[T]) SetParser(name string) error {
-	parser, exists := parsers[name]
-	if !exists {
-		return fmt.Errorf("parser %s not registered", name)
-	}
-	jit.parser = parser
-	return nil
-}
-
-// Parser returns the name of the parser used by JitJSON[T].
-// A parser might be nil when the JitJSON was initialised without a parser.
-// In this case, the JitJSON will return "<nil>" which is later set to the default parser.
-//
-// Example:
-//
-//	var jit *jitjson.JitJSON[Person]
-//	fmt.Println(jit.Parser()) // Output: <nil>
-//
-//	jit = jitjson.New(Person{})
-//	fmt.Println(jit.Parser()) // Output: encoding/json
-func (jit *JitJSON[T]) Parser() string {
-	if jit.parser == nil {
-		return "<nil>"
-	} else {
-		return jit.parser.Name()
-	}
 }
 
 // Marshal performs deferred json marshaling for the value of JitJSON[T]. The method can return without evaluating
@@ -76,12 +50,9 @@ func (jit *JitJSON[T]) Marshal() ([]byte, error) {
 	if jit.val == nil {
 		return nil, nil
 	}
-	if jit.parser == nil {
-		jit.parser = getDefaultParser()
-	}
 
 	var err error
-	jit.data, err = jit.parser.Marshal(jit.val)
+	jit.data, err = json.Marshal(jit.val)
 	if err != nil {
 		return nil, err
 	}
@@ -101,12 +72,9 @@ func (jit *JitJSON[T]) Unmarshal() (T, error) {
 	if jit.data == nil {
 		return val, nil
 	}
-	if jit.parser == nil {
-		jit.parser = getDefaultParser()
-	}
 
 	jit.val = &val
-	err := jit.parser.Unmarshal(jit.data, jit.val)
+	err := json.Unmarshal(jit.data, jit.val)
 	if err != nil {
 		return val, err
 	}
