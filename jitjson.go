@@ -2,7 +2,9 @@
 
 package jitjson
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 var _ json.Marshaler = (*JitJSON[any])(nil)
 var _ json.Unmarshaler = (*JitJSON[any])(nil)

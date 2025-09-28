@@ -20,25 +20,9 @@ type Person struct {
 
 // Example usage of encoding/json/v2 parser.
 func main() {
-	jitjson.MustSetDefaultParser("encoding/json/v2")
-	verifyDefaultParser()
-
 	simpleExample()
 	jsonv2Example()
 	invalidJsonv2Example()
-}
-
-// Verify default parser used.
-func verifyDefaultParser() {
-	fmt.Println("--------------------------------")
-	fmt.Println("Default parser")
-	fmt.Println("--------------------------------")
-
-	// Verify the default parser used
-	var jit = jitjson.New(Person{})
-	parser := jit.Parser()
-	fmt.Println("parser:", parser)
-	fmt.Println("default parser:", jitjson.DefaultParser())
 }
 
 // Simple example of using encoding/json/v2 parser.
@@ -94,7 +78,7 @@ func jsonv2Example() {
 	}
 	fmt.Printf("json/v1.Marshal: %s\n", stdJSON)
 
-	jit := jitjson.New(person)
+	jit := jitjson.New_V2(person)
 
 	// json/v2.Marshal calls jit.MarshalJSONTo()
 	jitJSON, err := jsonv2.Marshal(jit)
@@ -122,7 +106,7 @@ func jsonv2Example() {
 	fmt.Printf("json/v1.Unmarshal: %+v\n", stdPerson)
 
 	// json/v2.Unmarshal calls jit2.UnmarshalJSONFrom()
-	var jit2 jitjson.JitJSON[Person]
+	var jit2 jitjson.JitJSONV2[Person]
 	err = jsonv2.Unmarshal([]byte(jsonData), &jit2)
 	if err != nil {
 		panic(err)
@@ -155,8 +139,7 @@ func invalidJsonv2Example() {
 	}
 
 	// unmarshal with json/v1
-	var jit = jitjson.JitJSON[Person]{}
-	jit.SetParser("encoding/json")
+	var jit = jitjson.JitJSON_V1[Person]{}
 
 	err := json.Unmarshal([]byte(jsonData), &jit)
 	if err != nil {
@@ -166,11 +149,10 @@ func invalidJsonv2Example() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("json/v1 failed to unmarshal:", Person{} == person, "parser:", jit.Parser())
+	fmt.Println("json/v1 failed to unmarshal:", Person{} == person)
 
 	// unmarshal with json/v2
-	var jit2 = jitjson.JitJSON[Person]{}
-	jit2.SetParser("encoding/json/v2")
+	var jit2 = jitjson.JitJSONV2[Person]{}
 
 	err = jsonv2.Unmarshal([]byte(jsonData), &jit2)
 	if err != nil {
@@ -181,6 +163,6 @@ func invalidJsonv2Example() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("json/v2 failed to unmarshal:", Person{} == person, "parser:", jit2.Parser())
+	fmt.Println("json/v2 failed to unmarshal:", Person{} == person)
 
 }
