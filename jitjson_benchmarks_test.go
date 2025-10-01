@@ -83,8 +83,9 @@ func shouldParseIterator(parsePercent float64) func() bool {
 	}
 }
 
-// BenchmarkMarshal benchmarks marshaling performance for both jitjson and encoding/json
-func BenchmarkMarshal(b *testing.B) {
+// BenchmarkMarshalWorstCase benchmarks marshaling performance for both jitjson and encoding/json.
+// This performs worst-case analysis by marshaling all objects in the dataset.
+func BenchmarkMarshalWorstCase(b *testing.B) {
 	b.Run("jitjson/Small", func(b *testing.B) {
 		objects := make([]Object, 10)
 		for i := 0; i < 10; i++ {
@@ -218,8 +219,9 @@ func BenchmarkMarshal(b *testing.B) {
 	})
 }
 
-// BenchmarkUnmarshal benchmarks unmarshaling performance for both jitjson and encoding/json
-func BenchmarkUnmarshal(b *testing.B) {
+// BenchmarkUnmarshalWorstCase benchmarks unmarshaling performance for both jitjson and encoding/json.
+// This performs worst-case analysis by unmarshaling all objects in the dataset.
+func BenchmarkUnmarshalWorstCase(b *testing.B) {
 	b.Run("jitjson/Small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var arr []*jitjson.JitJSON[Object]

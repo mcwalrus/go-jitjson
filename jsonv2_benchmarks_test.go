@@ -86,8 +86,9 @@ func shouldParseIteratorV2(parsePercent float64) func() bool {
 	}
 }
 
-// BenchmarkMarshalV2 benchmarks marshaling performance for both jitjson v2 and encoding/json v2
-func BenchmarkMarshalV2(b *testing.B) {
+// BenchmarkMarshalWorstCaseV2 benchmarks marshaling performance for both jitjson v2 and encoding/json v2.
+// This performs worst-case analysis by marshaling all objects in the dataset.
+func BenchmarkMarshalWorstCaseV2(b *testing.B) {
 	b.Run("jitjson-v2/Small", func(b *testing.B) {
 		objects := make([]ObjectV2, 10)
 		for i := 0; i < 10; i++ {
@@ -221,8 +222,9 @@ func BenchmarkMarshalV2(b *testing.B) {
 	})
 }
 
-// BenchmarkUnmarshalV2 benchmarks unmarshaling performance for both jitjson v2 and encoding/json v2
-func BenchmarkUnmarshalV2(b *testing.B) {
+// BenchmarkUnmarshalWorstCaseV2 benchmarks unmarshaling performance for both jitjson v2 and encoding/json v2.
+// This performs worst-case analysis by unmarshaling all objects in the dataset.
+func BenchmarkUnmarshalWorstCaseV2(b *testing.B) {
 	b.Run("jitjson-v2/Small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var arr []*jitjson.JitJSONV2[ObjectV2]
@@ -307,8 +309,8 @@ func BenchmarkUnmarshalV2(b *testing.B) {
 func BenchmarkParsePercentageV2(b *testing.B) {
 	parsePercent, err := strconv.ParseFloat(os.Getenv("PARSE_PERCENTAGE"), 64)
 	if err != nil {
-		b.Log("PARSE_PERCENTAGE not set, defaulting to 0.3")
-		parsePercent = 0.3
+		b.Log("PARSE_PERCENTAGE not set, defaulting to 50%")
+		parsePercent = 0.5
 	} else {
 		b.Logf("PARSE_PERCENTAGE is set to %f", parsePercent)
 	}
