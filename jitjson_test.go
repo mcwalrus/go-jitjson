@@ -96,7 +96,6 @@ func TestNewJitJSON(t *testing.T) {
 			t.Error("value should be zero value")
 		}
 	})
-
 }
 
 // TestJitJSON_Set methods should provide consistency between the value and the encoding stored / returned.

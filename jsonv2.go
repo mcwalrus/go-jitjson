@@ -7,8 +7,10 @@ import (
 	jsonv2 "encoding/json/v2"
 )
 
-var _ jsonv2.MarshalerTo = (*JitJSONV2[any])(nil)
-var _ jsonv2.UnmarshalerFrom = (*JitJSONV2[any])(nil)
+var (
+	_ jsonv2.MarshalerTo     = (*JitJSONV2[any])(nil)
+	_ jsonv2.UnmarshalerFrom = (*JitJSONV2[any])(nil)
+)
 
 // JitJSONV2 provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.

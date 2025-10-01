@@ -7,7 +7,6 @@ import (
 )
 
 func TestValidate_ValidTypes(t *testing.T) {
-
 	type ValidStruct struct {
 		Name string `json:"name"`
 		Age  int    `json:"age"`
@@ -86,8 +85,7 @@ func TestValidate_ValidTypes(t *testing.T) {
 }
 
 func TestValidate_InvalidTypes(t *testing.T) {
-
-	// InvalidStruct: channels cannot be marshaled to JSON
+	// channels cannot be marshaled to JSON
 	type InvalidStruct struct {
 		Channel chan struct{} `json:"channel"`
 	}

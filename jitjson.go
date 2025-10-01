@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 )
 
-var _ json.Marshaler = (*JitJSON[any])(nil)
-var _ json.Unmarshaler = (*JitJSON[any])(nil)
+var (
+	_ json.Marshaler   = (*JitJSON[any])(nil)
+	_ json.Unmarshaler = (*JitJSON[any])(nil)
+)
 
 // JitJSON provides just-in-time (JIT) JSON parsing in Go for a value of type T.
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
