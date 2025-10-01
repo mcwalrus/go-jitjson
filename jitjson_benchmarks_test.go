@@ -83,13 +83,229 @@ func shouldParseIterator(parsePercent float64) func() bool {
 	}
 }
 
+// BenchmarkMarshal benchmarks marshaling performance for both jitjson and encoding/json
+func BenchmarkMarshal(b *testing.B) {
+	b.Run("jitjson/Small", func(b *testing.B) {
+		objects := make([]Object, 10)
+		for i := 0; i < 10; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			jitObjects := make([]*jitjson.JitJSON[Object], 10)
+			for j, obj := range objects {
+				jitObjects[j] = jitjson.New(obj)
+			}
+			for _, jit := range jitObjects {
+				_, err := jit.Marshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Small", func(b *testing.B) {
+		objects := make([]Object, 10)
+		for i := 0; i < 10; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for _, obj := range objects {
+				_, err := json.Marshal(obj)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("jitjson/Medium", func(b *testing.B) {
+		objects := make([]Object, 1000)
+		for i := 0; i < 1000; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			jitObjects := make([]*jitjson.JitJSON[Object], 1000)
+			for j, obj := range objects {
+				jitObjects[j] = jitjson.New(obj)
+			}
+			for _, jit := range jitObjects {
+				_, err := jit.Marshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Medium", func(b *testing.B) {
+		objects := make([]Object, 1000)
+		for i := 0; i < 1000; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for _, obj := range objects {
+				_, err := json.Marshal(obj)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("jitjson/Large", func(b *testing.B) {
+		objects := make([]Object, 100000)
+		for i := 0; i < 100000; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			jitObjects := make([]*jitjson.JitJSON[Object], 100000)
+			for j, obj := range objects {
+				jitObjects[j] = jitjson.New(obj)
+			}
+			for _, jit := range jitObjects {
+				_, err := jit.Marshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Large", func(b *testing.B) {
+		objects := make([]Object, 100000)
+		for i := 0; i < 100000; i++ {
+			err := json.Unmarshal([]byte(fmt.Sprintf(objectTemplate, i)), &objects[i])
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			for _, obj := range objects {
+				_, err := json.Marshal(obj)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+}
+
+// BenchmarkUnmarshal benchmarks unmarshaling performance for both jitjson and encoding/json
+func BenchmarkUnmarshal(b *testing.B) {
+	b.Run("jitjson/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []*jitjson.JitJSON[Object]
+			err := json.Unmarshal(smallData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, obj := range arr {
+				_, err := obj.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Small", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []Object
+			err := json.Unmarshal(smallData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("jitjson/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []*jitjson.JitJSON[Object]
+			err := json.Unmarshal(mediumData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, obj := range arr {
+				_, err := obj.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Medium", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []Object
+			err := json.Unmarshal(mediumData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("jitjson/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []*jitjson.JitJSON[Object]
+			err := json.Unmarshal(largeData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for _, obj := range arr {
+				_, err := obj.Unmarshal()
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+
+	b.Run("encoding-json/Large", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var arr []Object
+			err := json.Unmarshal(largeData, &arr)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
 // BenchmarkParsePercentage benchmarks the parsing of JSON data with a given percentage of objects
 // that are parsed. It compares the performance of JitJSON and the standard library.
 func BenchmarkParsePercentage(b *testing.B) {
 	parsePercent, err := strconv.ParseFloat(os.Getenv("PARSE_PERCENTAGE"), 64)
 	if err != nil {
-		b.Log("PARSE_PERCENTAGE not set, defaulting to 0.3")
-		parsePercent = 0.3
+		b.Log("PARSE_PERCENTAGE not set, defaulting to 50%")
+		parsePercent = 0.5
 	} else {
 		b.Logf("PARSE_PERCENTAGE is set to %f", parsePercent)
 	}

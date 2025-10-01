@@ -25,7 +25,7 @@ func TestJitJSON_MarshalJSONTo(t *testing.T) {
 	expectedJSON := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
 
 	t.Run("MarshalJSONTo with value", func(t *testing.T) {
-		jit := jitjson.New(person)
+		jit := jitjson.NewV2(person)
 		var buf strings.Builder
 		enc := jsontext.NewEncoder(&buf)
 
@@ -41,7 +41,7 @@ func TestJitJSON_MarshalJSONTo(t *testing.T) {
 	})
 
 	t.Run("MarshalJSONTo with cached data", func(t *testing.T) {
-		jit := jitjson.NewFromBytes[Person](expectedJSON)
+		jit := jitjson.NewFromBytesV2[Person](expectedJSON)
 		var buf strings.Builder
 		enc := jsontext.NewEncoder(&buf)
 
@@ -57,7 +57,7 @@ func TestJitJSON_MarshalJSONTo(t *testing.T) {
 	})
 
 	t.Run("MarshalJSONTo with nil value", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
+		jit := jitjson.JitJSONV2[Person]{}
 		var buf strings.Builder
 		enc := jsontext.NewEncoder(&buf)
 
@@ -74,7 +74,7 @@ func TestJitJSON_MarshalJSONTo(t *testing.T) {
 	})
 
 	t.Run("MarshalJSONTo returns error on invalid json", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
+		jit := jitjson.JitJSONV2[Person]{}
 		invalidJSON := []byte(`{"invalid": json}`)
 		jit.SetBytes(invalidJSON)
 
@@ -97,7 +97,7 @@ func TestJitJSON_UnmarshalJSONFrom(t *testing.T) {
 	jsonData := []byte(`{"Name":"John","Age":30,"City":"New York"}`)
 
 	t.Run("UnmarshalJSONFrom basic", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
+		jit := jitjson.JitJSONV2[Person]{}
 		dec := jsontext.NewDecoder(strings.NewReader(string(jsonData)))
 
 		err := jit.UnmarshalJSONFrom(dec)
@@ -117,7 +117,7 @@ func TestJitJSON_UnmarshalJSONFrom(t *testing.T) {
 
 	t.Run("UnmarshalJSONFrom clears existing value", func(t *testing.T) {
 		existingPerson := Person{Name: "Jane", Age: 25, City: "LA"}
-		jit := jitjson.New(existingPerson)
+		jit := jitjson.NewV2(existingPerson)
 
 		// Verify the first existing value
 		result, err := jit.Unmarshal()
@@ -147,7 +147,7 @@ func TestJitJSON_UnmarshalJSONFrom(t *testing.T) {
 	})
 
 	t.Run("UnmarshalJSONFrom with invalid JSON", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
+		jit := jitjson.JitJSONV2[Person]{}
 		invalidJSON := `{"invalid": json}`
 		dec := jsontext.NewDecoder(strings.NewReader(invalidJSON))
 		err := jit.UnmarshalJSONFrom(dec)

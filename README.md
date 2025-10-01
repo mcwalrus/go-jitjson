@@ -357,19 +357,49 @@ func main() {
 
 ## Benchmarks
 
-Benchmarks are run with the `-benchmem` flag to show memory allocations.
+The library provides comprehensive benchmarks for both `encoding/json` (v1) and `encoding/json/v2` implementations. 
+
+### Running Benchmarks
 
 ```bash
+export GOEXPERIMENT=jsonv2
+# Run all benchmarks (encoding/json v1)
+go test -bench=. -benchmem
+# Run all benchmarks (encoding/json v2) - requires Go 1.25+
 go test -bench=. -benchmem
 ```
 
-To run the benchmarks with a specific percentage of the data parsed, set the `PARSE_PERCENTAGE` environment variable.
+#### Marshaling Benchmarks
+
+```bash
+go test -bench='^BenchmarkMarshal$' -benchmem
+go test -bench='^BenchmarkMarshalV2$' -benchmem
+```
+
+#### Unmarshaling Benchmarks
+
+```bash
+go test -bench='^BenchmarkUnmarshal$' -benchmem
+go test -bench='^BenchmarkUnmarshalV2$' -benchmem
+```
+
+#### Nested Parsing Benchmarks
 
 ```bash
 PARSE_PERCENTAGE=0.5 go test -bench='^BenchmarkParsePercentage$' -benchmem
+PARSE_PERCENTAGE=0.5 go test -bench='^BenchmarkParsePercentageV2$' -benchmem
 ```
 
-Please note, jitjson benchmarks perform relative to the size and volume of data the library is applied to. Monolith applications will benifit the most which reductions in garbage collection cycles considering not all data needs to be parsed.
+#### Nested Object Benchmarks
+
+Test performance with nested jitjson structures:
+
+```bash
+go test -bench='^BenchmarkNestedParse$' -benchmem
+go test -bench='^BenchmarkNestedParseV2$' -benchmem
+```
+
+Note jitjson benchmarks perform relative to the size and volume of data the library is applied to. Monolith applications will benefit the most with reductions in garbage collection cycles considering not all data needs to be parsed.
 
 ## Contributing
 
