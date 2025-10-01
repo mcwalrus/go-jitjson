@@ -30,10 +30,11 @@ $ go get github.com/mcwalrus/go-jitjson
 
 ### Using json/v2
 
-For Go 1.25 with experimental `GOEXPERIMENT=jsonv2` set, jitjson provides support for [encoding/json/v2](https://pkg.go.dev/encoding/json/v2). 
+For Go 1.25+, jitjson provides support for [encoding/json/v2](https://pkg.go.dev/encoding/json/v2). 
 
 ```bash
-$ GOEXPERIMENT=jsonv2 go doc github.com/mcwalrus/go-jitjson.JitJSONV2
+$ export GOEXPERIMENT=jsonv2
+$ go doc github.com/mcwalrus/go-jitjson.JitJSONV2
 ```
 
 For more information on json/v2, see the [offical blog post](https://go.dev/blog/jsonv2-exp).
@@ -365,7 +366,7 @@ go test -bench=. -benchmem
 To run the benchmarks with a specific percentage of the data parsed, set the `PARSE_PERCENTAGE` environment variable.
 
 ```bash
-PARSE_PERCENTAGE=0.3 go test -bench='^BenchmarkParsePercentage$' -benchmem
+PARSE_PERCENTAGE=0.5 go test -bench='^BenchmarkParsePercentage$' -benchmem
 ```
 
 Please note, jitjson benchmarks perform relative to the size and volume of data the library is applied to. Monolith applications will benifit the most which reductions in garbage collection cycles considering not all data needs to be parsed.

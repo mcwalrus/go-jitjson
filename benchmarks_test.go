@@ -98,7 +98,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		b.Fatal("PARSE_PERCENTAGE must be between 0 and 1")
 	}
 
-	b.Run("JitJSON/Small", func(b *testing.B) {
+	b.Run("jitjson/Small", func(b *testing.B) {
 		shouldParse := shouldParseIterator(parsePercent)
 
 		for i := 0; i < b.N; i++ {
@@ -120,7 +120,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		}
 	})
 
-	b.Run("Stdlib/Small", func(b *testing.B) {
+	b.Run("encoding-json/Small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var arr []Object
 			err := json.Unmarshal(smallData, &arr)
@@ -130,7 +130,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		}
 	})
 
-	b.Run("JitJSON/Medium", func(b *testing.B) {
+	b.Run("jitjson/Medium", func(b *testing.B) {
 		shouldParse := shouldParseIterator(parsePercent)
 
 		for i := 0; i < b.N; i++ {
@@ -152,7 +152,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		}
 	})
 
-	b.Run("Stdlib/Medium", func(b *testing.B) {
+	b.Run("encoding-json/Medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var arr []Object
 			err := json.Unmarshal(mediumData, &arr)
@@ -162,7 +162,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		}
 	})
 
-	b.Run("JitJSON/Large", func(b *testing.B) {
+	b.Run("jitjson/Large", func(b *testing.B) {
 		shouldParse := shouldParseIterator(parsePercent)
 
 		for i := 0; i < b.N; i++ {
@@ -184,7 +184,7 @@ func BenchmarkParsePercentage(b *testing.B) {
 		}
 	})
 
-	b.Run("Stdlib/Large", func(b *testing.B) {
+	b.Run("encoding-json/Large", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var arr []Object
 			err := json.Unmarshal(largeData, &arr)
@@ -195,122 +195,111 @@ func BenchmarkParsePercentage(b *testing.B) {
 	})
 }
 
-const nestedObjectTemplate = `{
-	"nil": null,
-	"bool": true,
-	"number": 123.45,
-	"string": "Hello, World!",
-	"slice": [1, "two", false, null],
-	"object": null
-}`
-
-func generateNestedObjects(depth int) []byte {
-	if depth <= 0 {
+func buildNestedObjects(num int) []*NestedObject {
+	if num <= 0 {
 		return nil
 	}
-	obj := &Object{}
-	err := json.Unmarshal([]byte(nestedObjectTemplate), obj)
+	objs := make([]*NestedObject, num)
+	for i := 0; i < num; i++ {
+		objs[i] = &NestedObject{}
+		data := fmt.Sprintf(objectTemplate, i)
+		err := json.Unmarshal([]byte(data), objs[i])
+		if err != nil {
+			panic(err)
+		}
+	}
+	return objs
+}
+
+func buildNestedObjectsData(num int) []byte {
+	objs := buildNestedObjects(num)
+	data, err := json.Marshal(objs)
 	if err != nil {
 		panic(err)
 	}
-
-	obj.Object = buildNestedObject(depth - 1)
-	data, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-
 	return data
 }
 
-func buildNestedObject(depth int) *Object {
-	if depth <= 0 {
-		return nil
-	}
-	obj := &Object{}
-	err := json.Unmarshal([]byte(nestedObjectTemplate), obj)
-	if err != nil {
-		panic(err)
-	}
-
-	obj.Object = buildNestedObject(depth - 1)
-	return obj
-}
+// var (
+// 	smallNestedObjects  = buildNestedObjects(10)
+// 	mediumNestedObjects = buildNestedObjects(100)
+// 	largeNestedObjects  = buildNestedObjects(1000)
+// )
 
 var (
-	smallNestedObjects  = generateNestedObjects(10)
-	mediumNestedObjects = generateNestedObjects(100)
-	largeNestedObjects  = generateNestedObjects(1000)
+	smallNestedObjectsData  = buildNestedObjectsData(10)
+	mediumNestedObjectsData = buildNestedObjectsData(100)
+	largeNestedObjectsData  = buildNestedObjectsData(1000)
 )
 
 // JitObject is a struct that is used to test the nested object parsing.
 // The Object field is jitjson.JitJSON[*JitObject] which allows us to catch
 // the recursive case by performing just in time unmarshaling.
-type JitObject struct {
-	Nil    interface{}                  `json:"nil"`
-	Bool   bool                         `json:"bool"`
-	Number float64                      `json:"number"`
-	String string                       `json:"string"`
-	Slice  []interface{}                `json:"slice"`
-	Object *jitjson.JitJSON[*JitObject] `json:"object"` // marshalled as a pointer
+type NestedObject struct {
+	Nil    interface{}               `json:"nil"`
+	Bool   bool                      `json:"bool"`
+	Number float64                   `json:"number"`
+	String string                    `json:"string"`
+	Slice  []interface{}             `json:"slice"`
+	Object *jitjson.JitJSON[*Object] `json:"object"` // marshalled as a pointer
 }
 
 // Benchmark 2: Nested object parsing comparison
 func BenchmarkNestedParse(b *testing.B) {
-	b.Run("JitJSON/Small", func(b *testing.B) {
+	b.Run("jitjson/Small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj JitObject
-			err := json.Unmarshal(smallNestedObjects, &obj)
+			var objs []*NestedObject
+			err := json.Unmarshal(smallNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
 
-	b.Run("Stdlib/Small", func(b *testing.B) {
+	b.Run("encoding-json/Small", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj Object
-			err := json.Unmarshal(smallNestedObjects, &obj)
+			var objs []*Object
+			err := json.Unmarshal(smallNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
 
-	b.Run("JitJSON/Medium", func(b *testing.B) {
+	b.Run("jitjson/Medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj JitObject
-			err := json.Unmarshal(mediumNestedObjects, &obj)
+			var objs []*NestedObject
+			err := json.Unmarshal(mediumNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
 
-	b.Run("Stdlib/Medium", func(b *testing.B) {
+	b.Run("encoding-json/Medium", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj Object
-			err := json.Unmarshal(mediumNestedObjects, &obj)
+			var objs []*Object
+			err := json.Unmarshal(mediumNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
 
-	b.Run("JitJSON/Large", func(b *testing.B) {
+	b.Run("jitjson/Large", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj JitObject
-			err := json.Unmarshal(largeNestedObjects, &obj)
+			var objs []*NestedObject
+			err := json.Unmarshal(largeNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
 		}
 	})
 
-	b.Run("Stdlib/Large", func(b *testing.B) {
+	b.Run("encoding-json/Large", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			var obj Object
-			err := json.Unmarshal(largeNestedObjects, &obj)
+			var objs []*Object
+			err := json.Unmarshal(largeNestedObjectsData, &objs)
 			if err != nil {
 				b.Fatal(err)
 			}
