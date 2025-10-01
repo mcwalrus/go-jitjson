@@ -2,7 +2,6 @@ package jitjson
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 )
 
@@ -21,7 +20,7 @@ func Validate[T any]() error {
 	_, err1 := json.Marshal(&zero)
 	err2 := json.Unmarshal([]byte("null"), &zero)
 	if err1 != nil || err2 != nil {
-		return fmt.Errorf("type %T is not parseable: %w", zero, errors.Join(err1, err2))
+		return fmt.Errorf("type %T is not JSON parseable", zero)
 	}
 	return nil
 }

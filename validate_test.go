@@ -142,19 +142,19 @@ func TestValidate_ErrorMessages(t *testing.T) {
 		expectedPrefix string
 	}{
 		{
-			name:           "ChannelError",
-			test:           func() error { return jitjson.Validate[chan int]() },
-			expectedPrefix: "type chan int is not JSON marshalable",
-		},
-		{
 			name:           "FunctionError",
 			test:           func() error { return jitjson.Validate[func()]() },
-			expectedPrefix: "type func() is not JSON marshalable",
+			expectedPrefix: "type func() is not JSON parseable",
+		},
+		{
+			name:           "ChannelError",
+			test:           func() error { return jitjson.Validate[chan int]() },
+			expectedPrefix: "type chan int is not JSON parseable",
 		},
 		{
 			name:           "ComplexError",
 			test:           func() error { return jitjson.Validate[complex64]() },
-			expectedPrefix: "type complex64 is not JSON marshalable",
+			expectedPrefix: "type complex64 is not JSON parseable",
 		},
 	}
 
