@@ -180,7 +180,7 @@ func TestJitJSON_Slice(t *testing.T) {
 		{"Name":"Jane","Age":25,"City":"Los Angeles"}
 	]`)
 
-	var result []jitjson.JitJSON[Person]
+	var result []*jitjson.JitJSON[Person]
 	err := json.Unmarshal(jsonData, &result)
 	if err != nil {
 		t.Error(err)
