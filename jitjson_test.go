@@ -96,30 +96,6 @@ func TestNewJitJSON(t *testing.T) {
 			t.Error("value should be zero value")
 		}
 	})
-
-	t.Run("Verify default parser is set on marshal", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
-		jit.SetValue(person)
-		_, err := jit.Marshal()
-		if err != nil {
-			t.Error(err)
-		}
-		if jit.Parser() != jitjson.DefaultParser() {
-			t.Error("parser should be default parser")
-		}
-	})
-
-	t.Run("Verify default parser is set on unmarshal", func(t *testing.T) {
-		jit := jitjson.JitJSON[Person]{}
-		jit.SetBytes(jsonData)
-		_, err := jit.Unmarshal()
-		if err != nil {
-			t.Error(err)
-		}
-		if jit.Parser() != jitjson.DefaultParser() {
-			t.Error("parser should be default parser")
-		}
-	})
 }
 
 // TestJitJSON_Set methods should provide consistency between the value and the encoding stored / returned.
@@ -132,7 +108,7 @@ func TestJitJSON_Set(t *testing.T) {
 
 	t.Run("SetValue", func(t *testing.T) {
 		jit := jitjson.NewFromBytes[Person](person1Data)
-		jit.SetValue(person1)
+		jit.Set(person1)
 
 		//
 		data, err := jit.Marshal()
@@ -203,7 +179,7 @@ func TestJitJSON_Slice(t *testing.T) {
 		{"Name":"Jane","Age":25,"City":"Los Angeles"}
 	]`)
 
-	var result []jitjson.JitJSON[Person]
+	var result []*jitjson.JitJSON[Person]
 	err := json.Unmarshal(jsonData, &result)
 	if err != nil {
 		t.Error(err)
