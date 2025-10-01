@@ -357,7 +357,8 @@ func main() {
 
 ## Benchmarks
 
-See [BENCHMARKS.md](BENCHMARKS.md) for comprehensive benchmark results and performance analysis.
+See [BENCHMARK.md](BENCHMARK.md) for comprehensive benchmark results and performance analysis.
+
 
 ## Contributing
 
