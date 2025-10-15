@@ -16,7 +16,7 @@ var (
 // Parsing to or from JSON is deferred until the Marshal and Unmarshal methods are called.
 // Type implements parsing with the encoding/json/v2 library and supports new json/v2 interfaces.
 type JitJSONV2[T any] struct {
-	data []byte
+	data jsontext.Value
 	val  *T
 }
 
@@ -113,7 +113,7 @@ func (jit *JitJSONV2[T]) MarshalJSONTo(enc *jsontext.Encoder) error {
 	if data == nil {
 		return enc.WriteToken(jsontext.Null)
 	}
-	return enc.WriteValue(jsontext.Value(data))
+	return enc.WriteValue(data)
 }
 
 // UnmarshalJSONFrom implements the encoding/json/v2.UnmarshalerFrom interface for
@@ -126,6 +126,6 @@ func (jit *JitJSONV2[T]) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 		return err
 	}
 	jit.val = nil
-	jit.data = []byte(value)
+	jit.data = value
 	return nil
 }
