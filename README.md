@@ -6,11 +6,11 @@
 [![GoDoc](https://godoc.org/github.com/mcwalrus/go-jitjson?status.svg)](https://godoc.org/github.com/mcwalrus/go-jitjson)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Go library to provide lazy just-in-time (JIT) parsing of JSON encodings and values.
+Go library to provide lazy, or just-in-time (jit) parsing of JSON encodings and Go values.
 
 ## Motivation
 
-Traditional parsing with [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) processes all data immediately, even if it may never be used. Unnecessary parsing leads to wasted CPU cycles on unused data, unnecessary memory allocations, and increased pressure on garbage collection operations. If you intend to parse all your data, jitjson will not provide any benefit. Think of the library as a lazy two-way parser with caching implemented.
+Traditional parsing with [json.Marshal](https://pkg.go.dev/encoding/json#Marshal) or [json.Unmarshal](https://pkg.go.dev/encoding/json#Unmarshal) processes all data immediately, even if encoding or values are never used. Unnecessary parsing leads to wasted CPU cycles in processing, unnecessary memory allocations, and increased pressure on garbage collection operations. Use jitjson as placeholders to store json encodings or Go values until json parsing is actually needed.
 
 ## Key Features
 
@@ -19,6 +19,10 @@ Traditional parsing with [json.Marshal](https://pkg.go.dev/encoding/json#Marshal
 - 🔗 Integrates with encoding/json interfaces
 - 💾 Reduce memory when working with large JSON datasets 
 - 🚀 Improves performance by avoiding unnecessary parsing of JSON
+
+## Consider Use
+
+If you intend to use all of your data, jitjson will not provide any benefit.
 
 ## Installation
 
@@ -43,13 +47,15 @@ For more information on json/v2, see the [offical blog post](https://go.dev/blog
 
 ### Marshaling
 
-Use the `New` method to create a `JitJSON` from a Go value of any type.
+
 
 ```Go
 package main
 
 import (
     "fmt"
+    "encoding/json"
+
     "github.com/mcwalrus/go-jitjson"
 )
 
@@ -60,18 +66,20 @@ type Person struct {
 }
 
 func main() {
+    // jitjson: stores value
     jit := jitjson.New(Person{
         Name: "John",
         Age:  30,
         City: "New York",
     })
 
-    jsonEncoding, err := jit.Marshal() // just-in-time ...
+    // json.Marshal: parses json encoding
+    data, err := json.Marshal(jit)
     if err != nil {
         panic(err)
     }
 
-    fmt.Println(string(jsonEncoding)) // Output: {"age":30,"city":"New York","name":"John"}
+    fmt.Println(string(data)) // Output: {"age":30,"city":"New York","name":"John"}
 }
 ```
 
@@ -84,6 +92,8 @@ package main
 
 import (
     "fmt"
+    "encoding/json"
+
     "github.com/mcwalrus/go-jitjson"
 )
 
@@ -94,17 +104,26 @@ type Person struct {
 }
 
 func main() {
-    jit := jitjson.NewFromBytes[Person]([]byte(`{
+    // json encoding
+    data := `{
         "Name": "John",
         "Age": 30,
         "City": "New York"
-    }`))
+    }`
 
-    value, err := jit.Unmarshal() // just-in-time ...
+    // json.Unmarshal: stores json encoding
+    var jit = jitjson.NewFromBytes[Person]{}
+    err := json.Unmarshal(data, jit)
     if err != nil {
         panic(err)
     }
 
+    // jitjson: parses value only when needed
+    value, err := jit.Unmarshal()
+    if err != nil {
+        panic(err)
+    }
+    
     fmt.Println(value) // Output: {John 30 New York}
 }
 ```
