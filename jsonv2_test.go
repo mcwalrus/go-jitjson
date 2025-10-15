@@ -381,6 +381,15 @@ func TestJitJSONV2_UnmarshalJSONFrom(t *testing.T) {
 }
 
 func jsonEqual(a, b string) bool {
+	// Trim whitespace from both strings before comparison
+	a = strings.TrimSpace(a)
+	b = strings.TrimSpace(b)
+
+	// If strings are identical after trimming, they're equal
+	if a == b {
+		return true
+	}
+
 	var objA, objB interface{}
 	if err := jsonv2.Unmarshal([]byte(a), &objA); err != nil {
 		return false
